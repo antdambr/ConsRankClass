@@ -1,0 +1,33 @@
+Package: ConsRankClass
+Type: Package
+Title: Classification and Clustering of Preference Rankings
+Version: 1.1.0
+Date: 2026-10-21
+Authors@R: c(person("Antonio", "D'Ambrosio", role = c("aut", "cre"), email = "antdambr@unina.it"))
+Maintainer: Antonio D'Ambrosio <antdambr@unina.it>
+LinkingTo:
+    Rcpp
+Depends:
+    ConsRank
+Imports:
+    Rcpp,
+    janitor, methods, pracma, rlist, proxy, smacof, gtools, graphics, stats, utils
+Description: Tree-based classification and soft-clustering method for preference rankings, with tools for external validation of fuzzy clustering, and Kemeny-equivalent augmented unfolding.
+    It contains the recursive partitioning algorithm for preference rankings, non-parametric tree-based method for a matrix of preference rankings as a response variable. It contains also the distribution-free soft clustering method for preference rankings, namely the K-median cluster component analysis (CCA). 
+    The package depends on the 'ConsRank' R package.
+    Options for validate the tree-based method are both test-set procedure and V-fold cross validation.
+    The package contains the routines to compute the adjusted concordance index (a fuzzy version of the adjusted rand index) and the normalized degree of concordance (the corresponding fuzzy version of the rand index).
+    The package also contains routines to perform the Kemeny-equivalent augmented unfolding. The MDS engine is either the function 'smacofSym' from the package 'smacof' or the function mdscale() of this package, metric and non-metric multidimensional scaling with the criteria of the 'MATLAB' function of the same name (stress, sstress, metric stress, metric sstress, Sammon mapping, strain).
+    It also contains distances between complete rankings (Kendall, Cayley, Hamming, Ulam, Spearman footrule, Spearman), the Mallows (distance-based) model for any of these distances, with exact normalising constants, maximum likelihood estimation and exact simulation, mixtures of distance-based models fitted by the EM algorithm with model selection by BIC and ICL, and distance-based tree models in which a Mallows model is fitted within each node (also for top-k partial rankings).
+    Essential references:
+    D'Ambrosio, A., Vera, J.F., and Heiser, W.J. (2021) <doi:10.1080/00273171.2021.1899892>;
+    D'Ambrosio, A., Amodio, S., Iorio, C., Pandolfo, G., and Siciliano, R. (2021) <doi:10.1007/s00357-020-09367-0>;
+    D'Ambrosio, A., and Heiser, W.J. (2019) <doi:10.1007/s41237-018-0069-5>;    
+    D'Ambrosio, A., and Heiser W.J. (2016) <doi:10.1007/s11336-016-9505-1>;
+    Hullermeier, E., Rifqi, M., Henzgen, S., and Senge, R. (2012) <doi:10.1109/TFUZZ.2011.2179303>;
+    Murphy, T.B., and Martin, D. (2003) <doi:10.1016/S0167-9473(02)00165-2>;
+    Lee, P.H., and Yu, P.L.H. (2010) <doi:10.1016/j.csda.2010.01.027>;
+    Marden, J.J. <ISBN:0412995212>.
+License: GPL-3
+Encoding: UTF-8
+Config/roxygen2/version: 8.1.0
