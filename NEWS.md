@@ -52,6 +52,37 @@
   the measures based on them (error, Tau_X, `prunecost = "error"`,
   `validatetree()`) change. The name of the algorithm is now checked, ignoring
   the case. The package requires ConsRank 3.1 or later.
+* `ranktreecontrol(impurity = "median")` (`model = "kemeny"`): the impurity of
+  a node is the sum of the Kemeny distances of its rankings from its median
+  ranking (computed with `algorithm`), instead of the sum of the distances
+  between all the pairs of rankings divided by the size of the node
+  (`"pairwise"`, default, unchanged). The best split maximises the decrease of
+  this sum divided by the sample size. The median rankings of the two children
+  of every candidate split are computed from their combined input matrices,
+  obtained from the counts of the pairwise preferences (cumulative sums over
+  the cutting points of ordered predictors), and the impurity is computed
+  exactly from the same counts; the class of each node is the median ranking
+  used for its impurity. Rankings with missing values are not allowed. Each
+  candidate split requires two median rankings, so the tree is much slower to
+  grow than with `"pairwise"`, mainly with continuous predictors with many
+  distinct values. For them the new option `maxcuts` of `ranktreecontrol()`
+  (default `NULL`, all the cutting points) limits the cutting points of an
+  ordered predictor in a node to those leaving in the left child the
+  proportions 1/(K+1), ..., K/(K+1) of the judges (in a simulation with 300
+  judges, 20 objects and a continuous predictor, from 68 s to 4-7 s with
+  K = 10-20).
+* Constrained consensus in `ranktree()` (`model = "kemeny"`): new options
+  `nbuckets` (median bucket order with a fixed number of buckets),
+  `bucketsizes` (median bucket order with a pattern of bucket sizes, as in
+  `ConsRank::mcbo()`; requires `algorithm = "BOLT"`) and `topk` (median top-k
+  list, with `ConsRank::consranktopk()`: exact, or BOLT with
+  `algorithm = "BOLT"`) of `ranktreecontrol()`; at most one of them, and not
+  with `full = TRUE`. The class of each node is the constrained consensus,
+  computed from the combined input matrix of the node. With
+  `impurity = "pairwise"` the tree is unchanged and only the classes (and the
+  measures based on them) change; with `impurity = "median"` the impurity is
+  the sum of the distances from the constrained consensus, so the constraint
+  drives the splits. `print()` reports the constraint.
 
 ### Differences from Lee and Yu (2010) in `model = "mallows"`
 

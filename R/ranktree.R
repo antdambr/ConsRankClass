@@ -65,9 +65,27 @@
 #' \code{\link{ranktreecontrol}}.
 #'
 #' With \code{model = "kemeny"} (default) the tree is the recursive partitioning method of D'Ambrosio and
-#' Heiser (2016): the impurity of a node is based on Kemeny distances (with \code{impurity = "pairwise"},
-#' the default and at present the only choice, on the distances between all the pairs of rankings within
-#' the node), and the class of a node is its median ranking computed with \code{consrank}. No probability
+#' Heiser (2016): the impurity of a node is based on Kemeny distances, and the class of a node is its median
+#' ranking computed with \code{consrank}. With \code{impurity = "pairwise"} (default) the impurity is the sum
+#' of the Kemeny distances between all the pairs of rankings within the node, divided by its size, as in
+#' D'Ambrosio and Heiser (2016): the splits do not depend on the median rankings, so the tree is the same
+#' with any \code{algorithm}. With \code{impurity = "median"} the impurity of a node is the sum of the Kemeny
+#' distances of its rankings from its median ranking (\code{impur} is this sum divided by the size of the
+#' node, i.e. the mean distance from the median, and \code{wimpur} is the sum divided by the sample size),
+#' and the best split maximises the decrease of this sum, divided by the sample size. The median rankings
+#' of the two children of every candidate split are computed from their combined input matrices (updated
+#' by cumulative sums over the cutting points of ordered predictors), so the class of a node is exactly the
+#' median ranking used for its impurity. With a heuristic \code{algorithm} the decrease of a split can be
+#' slightly negative. Rankings with missing values are not allowed with \code{impurity = "median"}.
+#'
+#' The consensus of the nodes can be constrained with one of the options \code{nbuckets} (median bucket order with
+#' a fixed number of buckets), \code{bucketsizes} (median bucket order with a pattern of bucket sizes) and \code{topk}
+#' (median top-k list) of \code{\link{ranktreecontrol}}, computed by \code{\link[ConsRank]{mcbo}} and
+#' \code{\link[ConsRank]{consranktopk}} from the combined input matrix of the node. The class of each node is then
+#' the constrained consensus, and so are the measures based on it (\code{tau}, \code{error}, \code{validatetree},
+#' \code{predict}). With \code{impurity = "pairwise"} the tree is the same as without the constraint and only the
+#' classes change; with \code{impurity = "median"} the impurity is the sum of the distances from the constrained
+#' consensus, so the constraint drives the choice of the splits. No probability
 #' model is assumed, and the rankings can contain ties: the Kemeny distance is twice the Kendall distance for
 #' complete rankings, and is defined also for rankings with ties.
 #'
@@ -248,6 +266,9 @@ ranktree <-  function(Y,X,prunplot=FALSE,
     #pairwise preferences of each judge (see pairsigns): the impurity of any
     #subset of judges is computed from counts, without the Kemeny distance matrix
     PS <- pairsigns(Y)
+    if (identical(control$impurity,"median") && is(PS,"NULL")){
+      stop("impurity = \"median\" requires rankings without missing values: remove or complete the rankings with NA, or use impurity = \"pairwise\".")
+    }
   }
 
   L <- 1 #numbering of the list
@@ -261,8 +282,14 @@ ranktree <-  function(Y,X,prunplot=FALSE,
   tree$node$father[[L]] <- NULL #number of the father of the node
   tree$node$idfather[[L]] <- NA #id of the father node
   tree$node$size[[L]] <- N #size within node
+  MR <- NULL #median ranking and impurity of the root (impurity = "median")
   if (is(MS,"NULL")){
+    if (identical(control$impurity,"median")){
+      MR <- medimpurity(PS,xID,colnames(Y),control) #median ranking of the root and its impurity
+      tree$node$impur[[L]] <- tree$node$wimpur[[L]] <- MR$G/N #mean Kemeny distance from the median
+    } else {
     tree$node$impur[[L]] <- tree$node$wimpur[[L]] <- pairimpurity(Y,PS,xID)
+    }
   }
   tree$node$idatnode[[L]] <- xID #id of units in the node
   tree$control <- control
@@ -284,7 +311,11 @@ ranktree <-  function(Y,X,prunplot=FALSE,
 
   } else {
 
+  if (is(MR,"NULL")){
   CR=nodeconsensus(Y, tree$control) #median ranking of the root node
+  } else {
+  CR=MR$CR #impurity = "median": the median ranking used for the impurity
+  }
   
   if( is(CR,"NULL") ){
     #if the combined input matrix contains either only zeros or only positive values, 
@@ -341,7 +372,7 @@ ranktree <-  function(Y,X,prunplot=FALSE,
       # } else { #else aggiunta
         
         if (is(MS,"NULL")){
-          RS <- ranksplit(Y,X,N,nomin,namespreds,tree$node$idatnode[[L[ind[i]]]],PS)
+          RS <- ranksplit(Y,X,N,nomin,namespreds,tree$node$idatnode[[L[ind[i]]]],PS,tree$control)
         } else {
           RS <- ranksplitmallows(Y,X,N,nomin,namespreds,tree$node$idatnode[[L[ind[i]]]],
                                  MS$ST,MS$ctx,tree$control)
@@ -509,7 +540,11 @@ addnode <- function(Tree,RSpl,snod,C,N,MS=NULL){
   }
 
   #consensus ranking within node
+  if (is(RSpl$CR,"NULL")){
   CRL <- nodeconsensus(Tree$Y[RSpl$indexing$left,], Tree$control) #median ranking of the left child
+  } else {
+  CRL <- RSpl$CR$left #impurity = "median": the median ranking found by the split search
+  }
   
   if( is(CRL,"NULL") ){
     #if the combined input matrix contains either only zeros or only positive values, 
@@ -528,7 +563,11 @@ addnode <- function(Tree,RSpl,snod,C,N,MS=NULL){
   
   
   
+  if (is(RSpl$CR,"NULL")){
   CRR <- nodeconsensus(Tree$Y[RSpl$indexing$right,], Tree$control) #median ranking of the right child
+  } else {
+  CRR <- RSpl$CR$right #impurity = "median": the median ranking found by the split search
+  }
   
   if( is(CRR,"NULL") ){
     #if the combined input matrix contains either only zeros or only positive values, 
@@ -581,9 +620,31 @@ addnode <- function(Tree,RSpl,snod,C,N,MS=NULL){
 ## Median ranking of the judges in Y (model = "kemeny"), computed by consrank
 ## with the options of ranktreecontrol. The options of BOLT (otp, maxjudges)
 ## are passed only with algorithm = "BOLT", so that the calls with the other
-## algorithms are the same as in version 1.0.2.
+## algorithms are the same as in version 1.0.2. With cij (and nj, the number of
+## judges) the median ranking is computed from the combined input matrix
+## instead of Y (impurity = "median").
 
-nodeconsensus <- function(Y, control) {
+nodeconsensus <- function(Y, control, cij=NULL, nj=NULL) {
+  if (!is(control$nbuckets,"NULL") || !is(control$bucketsizes,"NULL") || !is(control$topk,"NULL")) {
+    #constrained consensus: always from the combined input matrix, which works
+    #also with one judge or identical rankings (mcbo with the data does not)
+    if (is(cij,"NULL")) {
+      if (is.null(dim(Y))) Y <- matrix(Y, nrow=1, dimnames=list(NULL, names(Y))) #a single judge
+      cij <- combinpmatr(Y) #combined input matrix of the judges
+      nj <- nrow(Y) #number of judges
+    }
+    return(constrconsensus(cij, nj, control))
+  }
+  if (!is(cij,"NULL")) {
+    #from the combined input matrix (ps = FALSE: no messages during the split search)
+    if (identical(control$algorithm, "BOLT")) {
+      otp <- if (is.null(control$otp)) TRUE else control$otp #default if the control list is older
+      return(consrank(cij=cij, nj=nj, algorithm="BOLT", ps=FALSE, full=control$full, otp=otp))
+    }
+    return(consrank(cij=cij, nj=nj, algorithm=control$algorithm, ps=FALSE, full=control$full,
+                    itermax=control$itermax, np=control$np, gl=control$gl,
+                    ff=control$ff, cr=control$cr, proc=control$proc))
+  }
   if (identical(control$algorithm, "BOLT")) {
     otp <- if (is.null(control$otp)) TRUE else control$otp #default if the control list is older
     maxjudges <- if (is.null(control$maxjudges)) Inf else control$maxjudges #same
@@ -594,6 +655,73 @@ nodeconsensus <- function(Y, control) {
              itermax=control$itermax, np=control$np, gl=control$gl,
              ff=control$ff, cr=control$cr, proc=control$proc) #the other algorithms, as before
   }
+}
+
+#--------------------------------------
+## Constrained consensus of a node from its combined input matrix cij (nj
+## judges): median bucket order with nbuckets buckets or with the pattern
+## bucketsizes (ConsRank::mcbo, with the algorithm of ranktreecontrol), or
+## median top-k list (ConsRank::consranktopk: exact, or BOLT when algorithm =
+## "BOLT"). The output has the components Consensus, Tau and Eltime, as
+## consrank.
+
+constrconsensus <- function(cij, nj, control) {
+  if (!is(control$topk,"NULL")) {
+    alg <- if (identical(control$algorithm, "BOLT")) "BOLT" else "exact" #algorithm of consranktopk
+    out <- consranktopk(cij=cij, nj=nj, k=control$topk, ps=FALSE, algorithm=alg)
+  } else {
+    out <- mcbo(cij=cij, nj=nj, nbuckets=control$nbuckets, bucketsizes=control$bucketsizes,
+                algorithm=control$algorithm, ps=FALSE, itermax=control$itermax,
+                np=control$np, gl=control$gl, ff=control$ff, cr=control$cr) #median bucket order
+  }
+  return(list(Consensus=out$Consensus, Tau=out$Tau, Eltime=out$Eltime))
+}
+
+#--------------------------------------
+## Median impurity (impurity = "median"). The combined input matrix of a set of
+## m judges follows from the counts of their pairwise preferences (see
+## pairsigns): for the pair (a, b), a < b, with n+ judges preferring a, n-
+## preferring b and n0 = m - n+ - n- ties, c_ab = n+ + n0 - n- = m - 2 n- and
+## c_ba = m - 2 n+ (the matrix of combinpmatr). The median ranking is computed
+## from it, and the impurity G is the sum of the Kemeny distances of the judges
+## from the median ranking, computed exactly from the counts: the pair costs
+## 2 n- + n0 if the median prefers a, 2 n+ + n0 if it prefers b and n+ + n- if
+## it ties them (all integers, so G does not depend on rounding).
+
+cijcounts <- function(P, N, m, items){
+  n <- length(items) #number of objects
+  pr <- which(upper.tri(diag(n)), arr.ind=TRUE) #pairs (a, b), a < b, in the order of pairsigns
+  cij <- matrix(0, n, n, dimnames=list(items, items)) #combined input matrix, zero diagonal
+  cij[pr] <- m - 2*N #c_ab
+  cij[pr[, 2:1, drop=FALSE]] <- m - 2*P #c_ba
+  return(cij)
+}
+
+#sum of the Kemeny distances of m judges, with counts P and N, from the ranking cons
+medcost <- function(P, N, m, cons){
+  n <- length(cons) #number of objects
+  pr <- which(upper.tri(diag(n)), arr.ind=TRUE) #pairs (a, b), a < b
+  d <- cons[pr[,2]] - cons[pr[,1]] #> 0: cons prefers a; < 0: prefers b; 0: tie
+  Z <- m - P - N #judges with a tie on the pair
+  return(sum(ifelse(d > 0, 2*N + Z, ifelse(d < 0, 2*P + Z, P + N))))
+}
+
+#median ranking (a consrank output) and impurity G of m judges with counts P and N
+medcounts <- function(P, N, m, items, control){
+  cij <- cijcounts(P, N, m, items) #combined input matrix
+  utils::capture.output(CR <- nodeconsensus(NULL, control, cij=cij, nj=m)) #messages of degenerate matrices are not printed
+  if (is(CR,"NULL")){ #all-tie solution, as in addnode
+    mr <- matrix(1, nrow=1, ncol=length(items), dimnames=list(NULL, items))
+    CR <- list(Consensus=mr, Tau=sum(cij)/(m*length(items)*(length(items)-1)), Eltime=0)
+  }
+  return(list(CR=CR, G=medcost(P, N, m, CR$Consensus[1,])))
+}
+
+#median ranking and impurity G of the judges in rows id
+medimpurity <- function(PS, id, items, control){
+  P <- colSums(PS$P[id, , drop=FALSE]) #judges preferring the first object of each pair
+  N <- colSums(PS$N[id, , drop=FALSE]) #judges preferring the second object
+  return(medcounts(P, N, length(id), items, control))
 }
 
 #--------------------------------------
@@ -670,15 +798,21 @@ colcumsum <- function(A){
 
 #--------------------------------------
 
-ranksplit = function(Y,X,N,nomin,namespreds,xID,PS=NULL)
+ranksplit = function(Y,X,N,nomin,namespreds,xID,PS=NULL,control=NULL)
 {
 
 
+  med <- identical(control$impurity,"median") #median impurity (otherwise pairwise)
+  items <- colnames(Y) #names of the objects
   # r = nrow(X[xID,])
   if (is.null(nrow(X[xID,]))){r=length(X[xID,])}
   npred=ncol(X[xID,])
   if (is.null(ncol(X[xID,]))){npred=1}
+  if (med) {
+    ImpFather = medimpurity(PS,xID,items,control)$G/N #sum of distances from the median, over N
+  } else {
   ImpFather = pairimpurity(Y,PS,xID)/N
+  }
   
   tablesplit=matrix(0,4,npred)
   colnames(tablesplit)=namespreds
@@ -750,9 +884,24 @@ ranksplit = function(Y,X,N,nomin,namespreds,xID,PS=NULL)
           PL <- PL[1:nh, , drop=FALSE]
           NL <- NL[1:nh, , drop=FALSE]
 
+          if (med) {
+            #cutting points considered: all, or at most maxcuts of them, those
+            #leaving in the left child the proportions j/(maxcuts+1) of the judges
+            ks <- 1:nh
+            if (!is(control$maxcuts,"NULL") && nh > control$maxcuts) {
+              tgt <- (1:control$maxcuts) * length(ok) / (control$maxcuts + 1) #target sizes of the left child
+              ks <- unique(sapply(tgt, function(s) which.min(abs(mL - s)))) #nearest cutting points
+            }
+            #median impurity of the two children for every cutting point considered
+            primp <- rep(-Inf, nh) #the other cutting points are never chosen
+            primp[ks]=sapply(ks, function(k)
+              ImpFather-( medcounts(PL[k,],NL[k,],mL[k],items,control)$G/N +
+                            medcounts(PR[k,],NR[k,],mR[k],items,control)$G/N ) )
+          } else {
           #same operations, in the same order, as the code above
           primp=ImpFather-( ( ifelse(mL==1,0,(pairsumkemd(PL,NL,mL)/mL)/N) ) +
                               (ifelse(mR==1,0,(pairsumkemd(PR,NR,mR)/mR)/N)  ) )
+          }
 
         }
 
@@ -779,7 +928,7 @@ ranksplit = function(Y,X,N,nomin,namespreds,xID,PS=NULL)
     else{
       
       PSnode <- if (is(PS,"NULL")) NULL else list(P=PS$P[xID, , drop=FALSE], N=PS$N[xID, , drop=FALSE])
-      Nspl=nominalsplit(x,Y[xID,],ImpFather,N,PSnode)
+      Nspl=nominalsplit(x,Y[xID,],ImpFather,N,PSnode,control)
       if (Nspl$Decr==0){
         
         tablesplit[1,i]=0
@@ -822,11 +971,27 @@ ranksplit = function(Y,X,N,nomin,namespreds,xID,PS=NULL)
   }
   
   Nodeimpurity=list(left=NA,right=NA)
-  
+
+  if (med) {
+    #median impurity: mean distance from the median ranking of each child, whose
+    #median rankings are returned (they become the classes of the children)
+    CRnodes <- NULL
+    if (!anyNA(indexing$left) && !anyNA(indexing$right)) {
+      ML <- medimpurity(PS,indexing$left,items,control)
+      MRt <- medimpurity(PS,indexing$right,items,control)
+      Nodeimpurity$left <- ML$G/length(indexing$left)
+      Nodeimpurity$right <- MRt$G/length(indexing$right)
+      CRnodes <- list(left=ML$CR, right=MRt$CR)
+    }
+    return( list(DecImp=DecImp, indexing=indexing,
+                 custSplit=cutSplit, NodeImpurity=Nodeimpurity, SplitVar=namespreds[bestsplit], idSplitVar=bestsplit,
+                 CR=CRnodes ) )
+  }
+
   Nodeimpurity$left <- ifelse(length(indexing$left)==1,0,pairimpurity(Y,PS,indexing$left))
   Nodeimpurity$right <- ifelse(length(indexing$right)==1,0,pairimpurity(Y,PS,indexing$right))
-  
-  return( list(DecImp=DecImp, indexing=indexing, 
+
+  return( list(DecImp=DecImp, indexing=indexing,
                custSplit=cutSplit, NodeImpurity=Nodeimpurity, SplitVar=namespreds[bestsplit], idSplitVar=bestsplit ) )
   
   
@@ -919,8 +1084,14 @@ splittingvariables = function(X){
 
 #' @importFrom methods is
 
-nominalsplit = function(X,Y,ImpFather,N,PS=NULL){
+nominalsplit = function(X,Y,ImpFather,N,PS=NULL,control=NULL){
 
+  if (identical(control$impurity,"median")) {
+    #median impurity: sum of the distances from the median ranking of the group
+    pairimpurity <- function(Y,PS,id) medimpurity(PS,id,colnames(Y),control)$G
+    #(as for the pairwise impurity, a group with a single judge gets impurity 0
+    #below; it differs from G only with full = TRUE and a ranking with ties)
+  }
   x=splittingvariables(X)
   
   if( is(x,"NULL")  ){ #if null, exit function

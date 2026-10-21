@@ -23,7 +23,11 @@ ranktreecontrol(
   minprop = NULL,
   lambdamax = 50,
   otp = TRUE,
-  maxjudges = Inf
+  maxjudges = Inf,
+  maxcuts = NULL,
+  nbuckets = NULL,
+  bucketsizes = NULL,
+  topk = NULL
 )
 }
 \arguments{
@@ -63,9 +67,12 @@ based on Kemeny distances, D'Ambrosio and Heiser, 2016) or \code{"mallows"} (a M
 fitted within each node and the impurity is its deviance, Lee and Yu, 2010). See Details of
 \code{\link{ranktree}}}
 
-\item{impurity}{(\code{model = "kemeny"} only) The impurity of a node: \code{"pairwise"} (default, based
-on the Kemeny distances between all the pairs of rankings within the node). Only \code{"pairwise"} is
-available at present}
+\item{impurity}{(\code{model = "kemeny"} only) The impurity of a node: \code{"pairwise"} (default, the
+sum of the Kemeny distances between all the pairs of rankings within the node, divided by its size, as in
+D'Ambrosio and Heiser, 2016) or \code{"median"} (the sum of the Kemeny distances of the rankings of the
+node from its median ranking, computed with \code{algorithm}). With \code{"pairwise"} the splits do not
+depend on the median rankings; with \code{"median"} every candidate split requires the median rankings of
+the two child nodes. See Details of \code{\link{ranktree}}}
 
 \item{dist}{(\code{model = "mallows"} only) The distance of the Mallows model. Only \code{"kendall"}
 is available at present}
@@ -81,7 +88,30 @@ modal ranking). Default: 50}
 (see \code{\link[ConsRank]{bolt}})}
 
 \item{maxjudges}{(\code{model = "kemeny"}, for "BOLT" only) Maximum number of distinct rankings of the judges of a node used
-by BOLT as starting solutions. Default Inf (all of them)}
+by BOLT as starting solutions. Default Inf (all of them). Not used with \code{impurity = "median"}, where the median
+rankings are computed from the combined input matrices of the nodes}
+
+\item{maxcuts}{(\code{model = "kemeny"} with \code{impurity = "median"} only) The maximum number of cutting points
+considered for an ordered predictor (numeric or ordered factor) in a node. Default \code{NULL}: all the cutting points
+(the exact search). With an integer K, when a predictor has more than K cutting points in a node only K of them are
+considered, those that leave in the left child the proportions 1/(K+1), 2/(K+1), ..., K/(K+1) of the judges of the node
+(or the nearest ones): the search is much faster with continuous predictors, at the price of possibly missing the
+best split. Nominal predictors are not affected}
+
+\item{nbuckets}{(\code{model = "kemeny"} only) If given, the consensus of each node is the median bucket order with
+exactly \code{nbuckets} buckets (computed by \code{\link[ConsRank]{mcbo}} with \code{algorithm}, which must be "BB",
+"quick", "decor" or "BOLT"). Default \code{NULL}: no constraint}
+
+\item{bucketsizes}{(\code{model = "kemeny"} only) If given, the consensus of each node is the median bucket order with
+this pattern of bucket sizes, from the first (top) bucket to the last: each element is a prescribed size or \code{NA}
+(free size), as in \code{\link[ConsRank]{mcbo}}. Requires \code{algorithm = "BOLT"}. Default \code{NULL}: no constraint}
+
+\item{topk}{(\code{model = "kemeny"} only) If given, the consensus of each node is the median top-k list of length
+\code{topk} (the top-k \emph{consensus}, computed by \code{\link[ConsRank]{consranktopk}}: the \code{topk} objects in
+positions 1, ..., k and the others tied in position k + 1), with the exact algorithm of \code{consranktopk}, or with
+its BOLT heuristic when \code{algorithm = "BOLT"}. Not to be confused with top-k \emph{data} (see \code{model =
+"mallows"}). Default \code{NULL}: no constraint. At most one of \code{nbuckets}, \code{bucketsizes} and \code{topk}
+can be given, and not with \code{full = TRUE}}
 }
 \value{
 A list containing all the control parameters

@@ -81,9 +81,27 @@ subtrees \tab \tab \tab list of each subtree created with the cost-complexity pr
 \code{\link{ranktreecontrol}}.
 
 With \code{model = "kemeny"} (default) the tree is the recursive partitioning method of D'Ambrosio and
-Heiser (2016): the impurity of a node is based on Kemeny distances (with \code{impurity = "pairwise"},
-the default and at present the only choice, on the distances between all the pairs of rankings within
-the node), and the class of a node is its median ranking computed with \code{consrank}. No probability
+Heiser (2016): the impurity of a node is based on Kemeny distances, and the class of a node is its median
+ranking computed with \code{consrank}. With \code{impurity = "pairwise"} (default) the impurity is the sum
+of the Kemeny distances between all the pairs of rankings within the node, divided by its size, as in
+D'Ambrosio and Heiser (2016): the splits do not depend on the median rankings, so the tree is the same
+with any \code{algorithm}. With \code{impurity = "median"} the impurity of a node is the sum of the Kemeny
+distances of its rankings from its median ranking (\code{impur} is this sum divided by the size of the
+node, i.e. the mean distance from the median, and \code{wimpur} is the sum divided by the sample size),
+and the best split maximises the decrease of this sum, divided by the sample size. The median rankings
+of the two children of every candidate split are computed from their combined input matrices (updated
+by cumulative sums over the cutting points of ordered predictors), so the class of a node is exactly the
+median ranking used for its impurity. With a heuristic \code{algorithm} the decrease of a split can be
+slightly negative. Rankings with missing values are not allowed with \code{impurity = "median"}.
+
+The consensus of the nodes can be constrained with one of the options \code{nbuckets} (median bucket order with
+a fixed number of buckets), \code{bucketsizes} (median bucket order with a pattern of bucket sizes) and \code{topk}
+(median top-k list) of \code{\link{ranktreecontrol}}, computed by \code{\link[ConsRank]{mcbo}} and
+\code{\link[ConsRank]{consranktopk}} from the combined input matrix of the node. The class of each node is then
+the constrained consensus, and so are the measures based on it (\code{tau}, \code{error}, \code{validatetree},
+\code{predict}). With \code{impurity = "pairwise"} the tree is the same as without the constraint and only the
+classes change; with \code{impurity = "median"} the impurity is the sum of the distances from the constrained
+consensus, so the constraint drives the choice of the splits. No probability
 model is assumed, and the rankings can contain ties: the Kemeny distance is twice the Kendall distance for
 complete rankings, and is defined also for rankings with ties.
 
