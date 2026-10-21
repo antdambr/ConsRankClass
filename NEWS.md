@@ -106,6 +106,38 @@
   precision for each leaf and one for each split; the modal rankings are not
   counted. BIC is not in their paper.
 
+* Descriptive tools, each a function returning an object with `print` and
+  `plot` methods (lattice graphics, grey levels): `marginals()`, the marginal
+  matrix of the positions of the objects with their mean ranks (bubble plot),
+  and `pairmatrix()`, the matrix of pairwise preferences (heatmap) with the
+  counts of preferences and ties kept separate, the proportions with ties
+  counting one half (default), of strict preferences or of ties, and the
+  normalised Borda scores (Marden, 1995, Sections 2.3-2.4). Rankings with ties
+  are allowed (a bucket shares its positions in the marginal matrix) and so are
+  top-k partial rankings (unranked objects tied in the last position), with
+  optional weights. The package now imports lattice, grid and grDevices.
+* `rankproj()`: projection of the rankings on the principal planes of the
+  permutation polytope (the biplot of Cohen and Mallows, 1980; Marden, 1995,
+  Section 2.2), i.e. the eigenvectors of the second moments of the rankings
+  about the center of the polytope (not about the mean ranking), with the
+  poles of the objects. The scores are scaled so that permutations lie on the
+  unit sphere (rankings with ties inside), and the poles are projected unit
+  vectors, whose length shows how well each object is represented. Ties
+  (midranks), top-k rankings and weights are allowed. `plot()` draws the
+  projected polytope-o-gram (symbols with area proportional to the number of
+  judges, poles as arrows, unit circle), optionally by groups of judges (e.g.
+  leaves of a tree or clusters) and with the labels of the rankings.
+* `objclust()`: hierarchical clustering of the objects (Marden, 1995, Example
+  2.18), with the mean squared difference of their ranks as distance and
+  complete linkage by default; `plot()` draws the dendrogram, optionally with
+  the groups of a cut. On the sports data the sequence of merges is the one
+  of Marden (1995, Figure 2.10).
+* `judgemds()`: multidimensional scaling of the judges with `mdscale()` on the
+  Kemeny distances between their distinct rankings, each pair weighted by the
+  product of the frequencies of the two rankings (`weighted = TRUE`), so that
+  the configuration represents the judges; `plot()` draws the distinct
+  rankings with area proportional to their frequency, optionally by groups and
+  with labels.
 * `mdscale()`: metric and non-metric multidimensional scaling with the six
   criteria of the MATLAB function `mdscale` (`"sstress"`, the default;
   `"stress"`, i.e. Kruskal's stress-1; `"metricstress"`; `"metricsstress"`;

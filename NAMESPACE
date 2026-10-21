@@ -2,17 +2,27 @@
 
 S3method(logLik,mallows)
 S3method(logLik,mixdbm)
+S3method(plot,judgemds)
 S3method(plot,kunfolding)
+S3method(plot,marginals)
 S3method(plot,mdscale)
+S3method(plot,objclust)
+S3method(plot,pairmatrix)
+S3method(plot,rankproj)
 S3method(plot,ranktree)
 S3method(predict,mixdbm)
 S3method(predict,ranktree)
 S3method(print,cca)
+S3method(print,judgemds)
 S3method(print,kunfolding)
 S3method(print,mallows)
+S3method(print,marginals)
 S3method(print,mdscale)
 S3method(print,mixdbm)
 S3method(print,mixdbmselect)
+S3method(print,objclust)
+S3method(print,pairmatrix)
+S3method(print,rankproj)
 S3method(print,ranktree)
 S3method(summary,cca)
 S3method(summary,kunfolding)
@@ -31,6 +41,7 @@ export(footruled)
 export(fuzzyconcordance)
 export(getsubtree)
 export(hammingd)
+export(judgemds)
 export(kendalld)
 export(kunfolding)
 export(layouttree)
@@ -39,6 +50,7 @@ export(mallowscenter)
 export(mallowsexpect)
 export(mallowslambda)
 export(mallowsnorm)
+export(marginals)
 export(mdscale)
 export(mdscalecontrol)
 export(mdscontrol)
@@ -46,7 +58,10 @@ export(mixdbm)
 export(mixdbmcontrol)
 export(mixdbmselect)
 export(nodepath)
+export(objclust)
+export(pairmatrix)
 export(rankdist)
+export(rankproj)
 export(ranktree)
 export(ranktreecontrol)
 export(rmallows)
@@ -58,6 +73,7 @@ export(validatetree)
 export(vecTaux)
 import(ConsRank)
 importFrom(Rcpp,sourceCpp)
+importFrom(grDevices,grey)
 importFrom(graphics,
   abline,
   arrows,
@@ -69,9 +85,24 @@ importFrom(graphics,
   segments,
   text
 )
+importFrom(grid,
+  gpar,
+  grid.circle,
+  unit
+)
 importFrom(janitor,
   compare_df_cols,
   compare_df_cols_same
+)
+importFrom(lattice,
+  levelplot,
+  panel.abline,
+  panel.arrows,
+  panel.levelplot,
+  panel.lines,
+  panel.points,
+  panel.text,
+  xyplot
 )
 importFrom(methods,
   as,
@@ -82,8 +113,11 @@ importFrom(proxy,dist)
 importFrom(rlist,list.rbind)
 importFrom(smacof,smacofSym)
 importFrom(stats,
+  as.dist,
   cmdscale,
   cor,
+  hclust,
+  rect.hclust,
   rmultinom,
   rnorm,
   runif

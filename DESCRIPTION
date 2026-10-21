@@ -11,7 +11,7 @@ Depends:
     ConsRank (>= 3.1)
 Imports:
     Rcpp,
-    janitor, methods, pracma, rlist, proxy, smacof, gtools, graphics, stats, utils
+    janitor, methods, pracma, rlist, proxy, smacof, gtools, graphics, grDevices, grid, lattice, stats, utils
 Description: Tree-based classification and soft-clustering method for preference rankings, with tools for external validation of fuzzy clustering, and Kemeny-equivalent augmented unfolding.
     It contains the recursive partitioning algorithm for preference rankings, non-parametric tree-based method for a matrix of preference rankings as a response variable. It contains also the distribution-free soft clustering method for preference rankings, namely the K-median cluster component analysis (CCA). 
     The package depends on the 'ConsRank' R package.
