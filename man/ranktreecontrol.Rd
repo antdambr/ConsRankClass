@@ -21,7 +21,9 @@ ranktreecontrol(
   impurity = "pairwise",
   dist = "kendall",
   minprop = NULL,
-  lambdamax = 50
+  lambdamax = 50,
+  otp = TRUE,
+  maxjudges = Inf
 )
 }
 \arguments{
@@ -30,7 +32,9 @@ ranktreecontrol(
 \item{decrmin}{Minimum decrease in impurity (\code{model = "kemeny"}) or in deviance divided by the
 sample size (\code{model = "mallows"}) to split a node}
 
-\item{algorithm}{(\code{model = "kemeny"} only) The algorithm used to compute the median ranking. One among"BB", "quick" (default), "fast" and "decor"}
+\item{algorithm}{(\code{model = "kemeny"} only) The algorithm used to compute the median ranking. One among "BB", "quick" (default),
+"fast", "decor" and "BOLT" (the name is matched ignoring the case). "BOLT" is the deterministic heuristic of \code{\link[ConsRank]{bolt}},
+fast also with many objects}
 
 \item{full}{(\code{model = "kemeny"} only) Specifies if the median ranking must be searched in the universe of rankings including all the possible ties. Default: FALSE}
 
@@ -72,6 +76,12 @@ the size of the node to be split. Default (\code{NULL}): 0.1, as in Lee and Yu (
 \item{lambdamax}{(\code{model = "mallows"} only) Upper bound for the precision parameter
 \eqn{\lambda}{lambda} of the Mallows model (reached when all the rankings in a node are equal to its
 modal ranking). Default: 50}
+
+\item{otp}{(\code{model = "kemeny"}, for "BOLT" only) If TRUE (default), the optimal tie partitioning step of BOLT is used
+(see \code{\link[ConsRank]{bolt}})}
+
+\item{maxjudges}{(\code{model = "kemeny"}, for "BOLT" only) Maximum number of distinct rankings of the judges of a node used
+by BOLT as starting solutions. Default Inf (all of them)}
 }
 \value{
 A list containing all the control parameters

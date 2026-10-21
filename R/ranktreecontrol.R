@@ -5,7 +5,13 @@
 #' @param num The maximum number of observations in a node to be split: default, 10\% of the sample size
 #' @param decrmin Minimum decrease in impurity (\code{model = "kemeny"}) or in deviance divided by the
 #' sample size (\code{model = "mallows"}) to split a node
-#' @param algorithm (\code{model = "kemeny"} only) The algorithm used to compute the median ranking. One among"BB", "quick" (default), "fast" and "decor"
+#' @param algorithm (\code{model = "kemeny"} only) The algorithm used to compute the median ranking. One among "BB", "quick" (default),
+#' "fast", "decor" and "BOLT" (the name is matched ignoring the case). "BOLT" is the deterministic heuristic of \code{\link[ConsRank]{bolt}},
+#' fast also with many objects
+#' @param otp (\code{model = "kemeny"}, for "BOLT" only) If TRUE (default), the optimal tie partitioning step of BOLT is used
+#' (see \code{\link[ConsRank]{bolt}})
+#' @param maxjudges (\code{model = "kemeny"}, for "BOLT" only) Maximum number of distinct rankings of the judges of a node used
+#' by BOLT as starting solutions. Default Inf (all of them)
 #' @param full (\code{model = "kemeny"} only) Specifies if the median ranking must be searched in the universe of rankings including all the possible ties. Default: FALSE
 #' @param itermax (\code{model = "kemeny"} only) Number of iterations for "fast" and "decor" algorithms. itermax=10 is the default option.
 #' @param np (\code{model = "kemeny"}, for "decor" only) the number of population individuals. np=15 is the default option.
@@ -56,11 +62,25 @@ ranktreecontrol <- function(num=NULL, decrmin=0.01, algorithm="quick",full=FALSE
                              itermax=10,np=15,gl=100,ff=0.4,cr=0.9,proc=FALSE,
                              ps=FALSE, prunecost=c("impurity","error"),
                              model=c("kemeny","mallows"), impurity="pairwise",
-                             dist="kendall", minprop=NULL, lambdamax=50)
+                             dist="kendall", minprop=NULL, lambdamax=50,
+                             otp=TRUE, maxjudges=Inf)
 
 {
 
   setbyuser <- names(match.call())[-1]
+  #algorithm of the median ranking, matched ignoring the case as in consrank
+  algs <- c("BB","quick","fast","decor","BOLT")
+  ialg <- match(tolower(algorithm), tolower(algs))
+  if (length(algorithm) != 1 || is.na(ialg)){
+    stop("algorithm must be one of \"BB\", \"quick\", \"fast\", \"decor\" or \"BOLT\".")
+  }
+  algorithm <- algs[ialg] #name as written in consrank
+  if (!is.logical(otp) || length(otp) != 1 || is.na(otp)){
+    stop("otp must be TRUE or FALSE.")
+  }
+  if (!is.numeric(maxjudges) || length(maxjudges) != 1 || is.na(maxjudges) || maxjudges < 1){
+    stop("maxjudges must be a number not smaller than 1 (Inf to use all the distinct rankings).")
+  }
   prunecost <- match.arg(prunecost)
   model <- match.arg(model)
   impurity <- match.arg(impurity, "pairwise")
@@ -73,7 +93,8 @@ ranktreecontrol <- function(num=NULL, decrmin=0.01, algorithm="quick",full=FALSE
   }
 
   #options that do not concern the chosen model
-  kemenyonly <- c("algorithm","full","itermax","np","gl","ff","cr","proc","ps","prunecost","impurity")
+  kemenyonly <- c("algorithm","full","itermax","np","gl","ff","cr","proc","ps","prunecost","impurity",
+                  "otp","maxjudges")
   mallowsonly <- c("dist","minprop","lambdamax")
   ignored <- intersect(setbyuser, if (model=="mallows") kemenyonly else mallowsonly)
   if (length(ignored) > 0){
@@ -82,5 +103,5 @@ ranktreecontrol <- function(num=NULL, decrmin=0.01, algorithm="quick",full=FALSE
 
   return(list(num=num,decrmin=decrmin, algorithm=algorithm, full=full, itermax=itermax, np=np, gl=gl, ff=ff,
               cr=cr, proc=proc, ps=ps, prunecost=prunecost, model=model, impurity=impurity, dist=dist,
-              minprop=minprop, lambdamax=lambdamax))
+              minprop=minprop, lambdamax=lambdamax, otp=otp, maxjudges=maxjudges))
 }

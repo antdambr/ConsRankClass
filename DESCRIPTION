@@ -8,7 +8,7 @@ Maintainer: Antonio D'Ambrosio <antdambr@unina.it>
 LinkingTo:
     Rcpp
 Depends:
-    ConsRank
+    ConsRank (>= 3.1)
 Imports:
     Rcpp,
     janitor, methods, pracma, rlist, proxy, smacof, gtools, graphics, stats, utils

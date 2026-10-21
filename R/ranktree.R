@@ -284,9 +284,7 @@ ranktree <-  function(Y,X,prunplot=FALSE,
 
   } else {
 
-  CR=consrank(Y, algorithm=tree$control$algorithm, ps=tree$control$ps, full=tree$control$full,
-              itermax=tree$control$itermax, np=tree$control$np, gl=tree$control$gl,
-              ff=tree$control$ff, cr=tree$control$cr, proc=tree$control$proc)
+  CR=nodeconsensus(Y, tree$control) #median ranking of the root node
   
   if( is(CR,"NULL") ){
     #if the combined input matrix contains either only zeros or only positive values, 
@@ -511,9 +509,7 @@ addnode <- function(Tree,RSpl,snod,C,N,MS=NULL){
   }
 
   #consensus ranking within node
-  CRL <- consrank(Tree$Y[RSpl$indexing$left,], algorithm=Tree$control$algorithm, ps=Tree$control$ps, full=Tree$control$full,
-                  itermax=Tree$control$itermax, np=Tree$control$np, gl=Tree$control$gl,
-                  ff=Tree$control$ff, cr=Tree$control$cr, proc=Tree$control$proc)
+  CRL <- nodeconsensus(Tree$Y[RSpl$indexing$left,], Tree$control) #median ranking of the left child
   
   if( is(CRL,"NULL") ){
     #if the combined input matrix contains either only zeros or only positive values, 
@@ -532,9 +528,7 @@ addnode <- function(Tree,RSpl,snod,C,N,MS=NULL){
   
   
   
-  CRR <- consrank(Tree$Y[RSpl$indexing$right,], algorithm=Tree$control$algorithm, ps=Tree$control$ps, full=Tree$control$full,
-                  itermax=Tree$control$itermax, np=Tree$control$np, gl=Tree$control$gl,
-                  ff=Tree$control$ff, cr=Tree$control$cr, proc=Tree$control$proc)
+  CRR <- nodeconsensus(Tree$Y[RSpl$indexing$right,], Tree$control) #median ranking of the right child
   
   if( is(CRR,"NULL") ){
     #if the combined input matrix contains either only zeros or only positive values, 
@@ -582,6 +576,25 @@ addnode <- function(Tree,RSpl,snod,C,N,MS=NULL){
   return(Tree)
   
 } # end code
+
+#--------------------------------------
+## Median ranking of the judges in Y (model = "kemeny"), computed by consrank
+## with the options of ranktreecontrol. The options of BOLT (otp, maxjudges)
+## are passed only with algorithm = "BOLT", so that the calls with the other
+## algorithms are the same as in version 1.0.2.
+
+nodeconsensus <- function(Y, control) {
+  if (identical(control$algorithm, "BOLT")) {
+    otp <- if (is.null(control$otp)) TRUE else control$otp #default if the control list is older
+    maxjudges <- if (is.null(control$maxjudges)) Inf else control$maxjudges #same
+    consrank(Y, algorithm="BOLT", ps=control$ps, full=control$full,
+             otp=otp, maxjudges=maxjudges) #BOLT heuristic
+  } else {
+    consrank(Y, algorithm=control$algorithm, ps=control$ps, full=control$full,
+             itermax=control$itermax, np=control$np, gl=control$gl,
+             ff=control$ff, cr=control$cr, proc=control$proc) #the other algorithms, as before
+  }
+}
 
 #--------------------------------------
 

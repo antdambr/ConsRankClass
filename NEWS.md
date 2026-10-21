@@ -43,6 +43,15 @@
   the Kemeny distance between the rankings and the median ranking of each node
   (the measure used by `validatetree()`) instead of the impurity (default,
   unchanged).
+* `ranktreecontrol(algorithm = "BOLT")` (`model = "kemeny"`): the median
+  ranking of the nodes can be computed with the BOLT heuristic of ConsRank
+  (Romano, D'Ambrosio and Conversano), fast also with many objects; its options
+  `otp` and `maxjudges` are new options of `ranktreecontrol()`. With
+  `impurity = "pairwise"` the splits do not depend on the median rankings, so
+  the tree is the same with any algorithm: only the classes of the nodes and
+  the measures based on them (error, Tau_X, `prunecost = "error"`,
+  `validatetree()`) change. The name of the algorithm is now checked, ignoring
+  the case. The package requires ConsRank 3.1 or later.
 
 ### Differences from Lee and Yu (2010) in `model = "mallows"`
 
