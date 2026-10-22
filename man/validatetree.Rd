@@ -53,6 +53,9 @@ Validation of the tree either with a test set procedure or with v-fold cross val
 \details{
 With \code{model = "mallows"} the test rankings can be top-k partial rankings as for
 \code{\link{ranktree}} (unranked objects coded as \code{NA} or tied in the last position).
+With \code{model = "kemeny"} the objects not ranked (\code{NA}) in the test rankings are treated as in the tree
+(option \code{unranked} of \code{\link{ranktreecontrol}}): with \code{"last"} they are tied after the last ranked
+object; with \code{"unknown"} tau and error are computed on the observed pairs only.
 }
 \examples{
 \donttest{

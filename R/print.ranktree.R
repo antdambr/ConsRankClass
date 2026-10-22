@@ -40,6 +40,8 @@ print.ranktree <- function(x,...){
   cat("Algorithm used to compute median rankings: ", Tree$control$algorithm, "\n")
   if (identical(Tree$control$impurity, "median")) #printed only for the new impurity, so the output is unchanged otherwise
     cat("Impurity: sum of the Kemeny distances from the median ranking of the node", "\n")
+  if (identical(Tree$control$unranked, "unknown")) #printed only for this option, so the output is unchanged otherwise
+    cat("Objects not ranked: in unknown order (only the observed pairs count)", "\n")
   if (!is.null(Tree$control$nbuckets)) #constrained consensus (printed only when there is a constraint)
     cat("Consensus of the nodes: median bucket order with", Tree$control$nbuckets, "buckets", "\n")
   if (!is.null(Tree$control$bucketsizes))

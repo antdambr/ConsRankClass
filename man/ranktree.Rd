@@ -92,7 +92,22 @@ and the best split maximises the decrease of this sum, divided by the sample siz
 of the two children of every candidate split are computed from their combined input matrices (updated
 by cumulative sums over the cutting points of ordered predictors), so the class of a node is exactly the
 median ranking used for its impurity. With a heuristic \code{algorithm} the decrease of a split can be
-slightly negative. Rankings with missing values are not allowed with \code{impurity = "median"}.
+slightly negative.
+
+\strong{Objects not ranked.} With \code{model = "kemeny"} the objects not ranked by a judge are coded as
+\code{NA}, and the option \code{unranked} of \code{\link{ranktreecontrol}} says how they are treated. With
+\code{unranked = "last"} (default) they are tied in the position after the last object ranked by the judge, as
+in D'Ambrosio and Heiser (2016), and the rankings stored in the tree (\code{Y}) are completed in this way. With
+\code{unranked = "unknown"} (only with \code{impurity = "median"}) they come after the ranked objects, but their
+order is unknown: a pair of two objects not ranked by a judge is not observed, and it counts neither as a
+preference nor as a tie. The combined input matrix of a node then counts, for each pair, only the judges who rank
+at least one of its objects, and the impurity is the sum of the Kemeny distances from the median ranking computed
+on the observed pairs; \code{tau} and \code{error} of the nodes are the averaged \eqn{\tau_X}{tau_X} and the
+normalized Kemeny distance on the observed pairs, and so are \code{prunecost = "error"} and the measures of
+\code{validatetree}. For top-k lists ("choose and rank k objects out of n") this convention uses all the
+information given by the judges, and nothing more: the combined input matrix is the average of the matrices
+obtained by completing each top-k list in all the possible ways. The rankings stored in the tree keep the
+\code{NA}.
 
 The consensus of the nodes can be constrained with one of the options \code{nbuckets} (median bucket order with
 a fixed number of buckets), \code{bucketsizes} (median bucket order with a pattern of bucket sizes) and \code{topk}

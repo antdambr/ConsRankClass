@@ -76,7 +76,22 @@
 #' of the two children of every candidate split are computed from their combined input matrices (updated
 #' by cumulative sums over the cutting points of ordered predictors), so the class of a node is exactly the
 #' median ranking used for its impurity. With a heuristic \code{algorithm} the decrease of a split can be
-#' slightly negative. Rankings with missing values are not allowed with \code{impurity = "median"}.
+#' slightly negative.
+#'
+#' \strong{Objects not ranked.} With \code{model = "kemeny"} the objects not ranked by a judge are coded as
+#' \code{NA}, and the option \code{unranked} of \code{\link{ranktreecontrol}} says how they are treated. With
+#' \code{unranked = "last"} (default) they are tied in the position after the last object ranked by the judge, as
+#' in D'Ambrosio and Heiser (2016), and the rankings stored in the tree (\code{Y}) are completed in this way. With
+#' \code{unranked = "unknown"} (only with \code{impurity = "median"}) they come after the ranked objects, but their
+#' order is unknown: a pair of two objects not ranked by a judge is not observed, and it counts neither as a
+#' preference nor as a tie. The combined input matrix of a node then counts, for each pair, only the judges who rank
+#' at least one of its objects, and the impurity is the sum of the Kemeny distances from the median ranking computed
+#' on the observed pairs; \code{tau} and \code{error} of the nodes are the averaged \eqn{\tau_X}{tau_X} and the
+#' normalized Kemeny distance on the observed pairs, and so are \code{prunecost = "error"} and the measures of
+#' \code{validatetree}. For top-k lists ("choose and rank k objects out of n") this convention uses all the
+#' information given by the judges, and nothing more: the combined input matrix is the average of the matrices
+#' obtained by completing each top-k list in all the possible ways. The rankings stored in the tree keep the
+#' \code{NA}.
 #'
 #' The consensus of the nodes can be constrained with one of the options \code{nbuckets} (median bucket order with
 #' a fixed number of buckets), \code{bucketsizes} (median bucket order with a pattern of bucket sizes) and \code{topk}
@@ -263,9 +278,13 @@ ranktree <-  function(Y,X,prunplot=FALSE,
     MS <- list(ST=mallowsstats(Y,TK$k), ctx=mallowsctx(C))
     PS <- NULL
   } else {
+    #objects not ranked by a judge (NA): tied after the last ranked object
+    #(unranked = "last"), or in unknown order (unranked = "unknown", see pairsignsunknown)
+    unknown <- identical(control$unranked,"unknown")
+    if (!unknown && anyNA(Y)) {Y <- fillunranked(Y)} #NA replaced by the position after the last ranked one
     #pairwise preferences of each judge (see pairsigns): the impurity of any
     #subset of judges is computed from counts, without the Kemeny distance matrix
-    PS <- pairsigns(Y)
+    PS <- if (unknown) pairsignsunknown(Y) else pairsigns(Y)
     if (identical(control$impurity,"median") && is(PS,"NULL")){
       stop("impurity = \"median\" requires rankings without missing values: remove or complete the rankings with NA, or use impurity = \"pairwise\".")
     }
@@ -334,8 +353,15 @@ ranktree <-  function(Y,X,prunplot=FALSE,
   tree$node$class[[L]] <- rank2order(CR$Consensus[1,],items=colnames(Y)) #class assignment rule
   tree$node$nclass[[L]] <- CR$Consensus[1,] #numeric class
   tree$node$mclass[[L]]<- CR$Consensus  #class, containing eventually more than one median ranking
+  if (identical(control$unranked,"unknown")){
+    #objects in unknown order: tau and error on the observed pairs only (see medcounts)
+    tree$node$tau[[L]] <- tree$node$wtau[[L]] <- 1 - MR$G/MR$O   #goodness of fit
+    tree$node$werror[[L]] <- tree$node$error[[L]] <- MR$G/(2*MR$O)  #error within node
+    tree$opairs <- MR$O #observed pairs of the root: weights of the nodes
+  } else {
   tree$node$tau[[L]] <- tree$node$wtau[[L]] <- CR$Tau[1]   #goodness of fit
   tree$node$werror[[L]] <- tree$node$error[[L]] <- sum(kemenyd(Y,CR$Consensus))/(N*C*(C-1))  #error within node
+  }
 
   } #end if mallows
 
@@ -600,11 +626,26 @@ addnode <- function(Tree,RSpl,snod,C,N,MS=NULL){
   Tree$node$wtau[[numr]] <- CRR$Tau[1] * (length(RSpl$indexing$right)/N)
   
   #error and weigthed error within node
+  if (identical(Tree$control$unranked,"unknown")){
+  #objects in unknown order: tau and error on the observed pairs only (see medcounts,
+  #which stores in the median ranking the distance G and the observed pairs O)
+  Tree$node$tau[[numl]] <- 1 - CRL$G/CRL$O
+  Tree$node$tau[[numr]] <- 1 - CRR$G/CRR$O
+  Tree$node$error[[numl]] <- CRL$G/(2*CRL$O)
+  Tree$node$error[[numr]] <- CRR$G/(2*CRR$O)
+  #weights: share of the observed pairs of the root (Tree$opairs), so that the
+  #sums over the leaves are tau and error of all the observed pairs
+  Tree$node$wtau[[numl]] <- Tree$node$tau[[numl]] * (CRL$O/Tree$opairs)
+  Tree$node$wtau[[numr]] <- Tree$node$tau[[numr]] * (CRR$O/Tree$opairs)
+  Tree$node$werror[[numl]] <- Tree$node$error[[numl]] * (CRL$O/Tree$opairs)
+  Tree$node$werror[[numr]] <- Tree$node$error[[numr]] * (CRR$O/Tree$opairs)
+  } else {
   Tree$node$error[[numl]] <- sum(kemenyd(Tree$Y[RSpl$indexing$left,],CRL$Consensus[1,]))/( (length(RSpl$indexing$left)) *C*(C-1))
   Tree$node$error[[numr]] <- sum(kemenyd(Tree$Y[RSpl$indexing$right,],CRR$Consensus[1,]))/( (length(RSpl$indexing$right))*C*(C-1))
-  
+
   Tree$node$werror[[numl]] <- Tree$node$error[[numl]] * (length(RSpl$indexing$left)/N)
   Tree$node$werror[[numr]] <- Tree$node$error[[numr]] * (length(RSpl$indexing$right)/N)
+  }
   
   #for a moment declare as NA the splitting variables potentially generated by subsequent splits
   
@@ -687,41 +728,56 @@ constrconsensus <- function(cij, nj, control) {
 ## from the median ranking, computed exactly from the counts: the pair costs
 ## 2 n- + n0 if the median prefers a, 2 n+ + n0 if it prefers b and n+ + n- if
 ## it ties them (all integers, so G does not depend on rounding).
+## With unranked = "unknown" a pair is observed only by the judges who rank at
+## least one of its objects: with O of them (vector, one value per pair) the
+## same formulas hold with m replaced by O, i.e. c_ab = O - 2 n-, c_ba = O - 2 n+
+## and n0 = O - n+ - n- ties (the pairs not observed add nothing).
 
-cijcounts <- function(P, N, m, items){
+cijcounts <- function(P, N, m, items, O=NULL){
+  M <- if (is(O,"NULL")) m else O #judges who observe each pair (all of them, or O)
   n <- length(items) #number of objects
   pr <- which(upper.tri(diag(n)), arr.ind=TRUE) #pairs (a, b), a < b, in the order of pairsigns
   cij <- matrix(0, n, n, dimnames=list(items, items)) #combined input matrix, zero diagonal
-  cij[pr] <- m - 2*N #c_ab
-  cij[pr[, 2:1, drop=FALSE]] <- m - 2*P #c_ba
+  cij[pr] <- M - 2*N #c_ab
+  cij[pr[, 2:1, drop=FALSE]] <- M - 2*P #c_ba
   return(cij)
 }
 
 #sum of the Kemeny distances of m judges, with counts P and N, from the ranking cons
-medcost <- function(P, N, m, cons){
+#(with O: judges who observe each pair, the pairs not observed cost nothing)
+medcost <- function(P, N, m, cons, O=NULL){
+  M <- if (is(O,"NULL")) m else O #judges who observe each pair
   n <- length(cons) #number of objects
   pr <- which(upper.tri(diag(n)), arr.ind=TRUE) #pairs (a, b), a < b
   d <- cons[pr[,2]] - cons[pr[,1]] #> 0: cons prefers a; < 0: prefers b; 0: tie
-  Z <- m - P - N #judges with a tie on the pair
+  Z <- M - P - N #judges with a tie on the pair
   return(sum(ifelse(d > 0, 2*N + Z, ifelse(d < 0, 2*P + Z, P + N))))
 }
 
 #median ranking (a consrank output) and impurity G of m judges with counts P and N
-medcounts <- function(P, N, m, items, control){
-  cij <- cijcounts(P, N, m, items) #combined input matrix
+#(and O, the judges who observe each pair, with unranked = "unknown")
+medcounts <- function(P, N, m, items, control, O=NULL){
+  cij <- cijcounts(P, N, m, items, O) #combined input matrix
   utils::capture.output(CR <- nodeconsensus(NULL, control, cij=cij, nj=m)) #messages of degenerate matrices are not printed
   if (is(CR,"NULL")){ #all-tie solution, as in addnode
     mr <- matrix(1, nrow=1, ncol=length(items), dimnames=list(NULL, items))
     CR <- list(Consensus=mr, Tau=sum(cij)/(m*length(items)*(length(items)-1)), Eltime=0)
   }
-  return(list(CR=CR, G=medcost(P, N, m, CR$Consensus[1,])))
+  G <- medcost(P, N, m, CR$Consensus[1,], O) #sum of the distances from the median ranking
+  if (is(O,"NULL")) {return(list(CR=CR, G=G))}
+  #unranked = "unknown": the distance G and the number of observed pairs (each
+  #pair once) are also stored with the median ranking, for tau and error of the node
+  CR$G <- G
+  CR$O <- sum(O)
+  return(list(CR=CR, G=G, O=sum(O)))
 }
 
 #median ranking and impurity G of the judges in rows id
 medimpurity <- function(PS, id, items, control){
   P <- colSums(PS$P[id, , drop=FALSE]) #judges preferring the first object of each pair
   N <- colSums(PS$N[id, , drop=FALSE]) #judges preferring the second object
-  return(medcounts(P, N, length(id), items, control))
+  O <- if (is(PS$O,"NULL")) NULL else colSums(PS$O[id, , drop=FALSE]) #judges observing each pair
+  return(medcounts(P, N, length(id), items, control, O))
 }
 
 #--------------------------------------
@@ -751,6 +807,73 @@ pairsigns <- function(Y){
   D <- Y[, pr[,2], drop=FALSE] - Y[, pr[,1], drop=FALSE]
 
   return(list(P = 1*(D>0), N = 1*(D<0)))
+
+} #end function
+
+#--------------------------------------
+
+## Pairwise preferences with unranked = "unknown". The objects not ranked by a
+## judge (NA) come after the ranked ones, in unknown order. For the pair (a, b),
+## a < b: P = 1 if the judge prefers a (a ranked ahead of b, or a ranked and b
+## not), N = 1 if the judge prefers b, O = 1 if the judge observes the pair (at
+## least one of a and b is ranked). A pair of two unranked objects has
+## P = N = O = 0: it does not count, neither as a preference nor as a tie.
+
+pairsignsunknown <- function(Y){
+
+  if (any(rowSums(!is.na(Y)) == 0)) {
+    stop("every judge must rank at least one object: remove the rows of Y with only missing values.")
+  }
+  pr <- which(upper.tri(diag(ncol(Y))), arr.ind=TRUE) #pairs (a, b), a < b
+  Ya <- Y[, pr[,1], drop=FALSE] #positions of a
+  Yb <- Y[, pr[,2], drop=FALSE] #positions of b
+  na <- is.na(Ya) #a not ranked
+  nb <- is.na(Yb) #b not ranked
+  D <- Yb - Ya #> 0: a ahead of b (NA if one of them is not ranked)
+  P <- (!na & !nb & D > 0) | (!na & nb) #a ahead of b, or a ranked and b not
+  N <- (!na & !nb & D < 0) | (na & !nb) #b ahead of a, or b ranked and a not
+  O <- !(na & nb) #pair observed: at least one of a and b ranked
+
+  return(list(P = 1*P, N = 1*N, O = 1*O))
+
+} #end function
+
+#--------------------------------------
+
+## unranked = "last": the objects not ranked by a judge (NA) are tied in the
+## position after the worst position used by the judge.
+
+fillunranked <- function(Y){
+
+  if (any(rowSums(!is.na(Y)) == 0)) {
+    stop("every judge must rank at least one object: remove the rows of Y with only missing values.")
+  }
+  last <- apply(Y, 1, max, na.rm=TRUE) + 1 #position after the last ranked object, judge by judge
+  miss <- which(is.na(Y), arr.ind=TRUE) #cells (judge, object) not ranked
+  Y[miss] <- last[miss[,1]] #each one gets the position of its judge
+  return(Y)
+
+} #end function
+
+#--------------------------------------
+
+## Agreement between the rankings Y of some judges, with NA for the objects in
+## unknown order (unranked = "unknown"), and the rankings Fit assigned to them
+## (one row each): on each observed pair the distance is 0 if they agree, 1 if
+## exactly one of them is a tie and 2 if they are opposite. tau = 1 - G / O and
+## error = G / (2 O), with G the total distance and O the number of observed
+## pairs (each pair once): the averaged tau_X and the normalized Kemeny distance
+## on the observed pairs, as for the nodes of the tree.
+
+unknownfit <- function(Y, Fit){
+
+  PS <- pairsignsunknown(Y) #preferences of the judges on each pair
+  pr <- which(upper.tri(diag(ncol(Y))), arr.ind=TRUE) #pairs (a, b), a < b
+  sy <- PS$P - PS$N #judge: 1 prefers a, -1 prefers b, 0 tie (or pair not observed)
+  sf <- sign(Fit[, pr[,2], drop=FALSE] - Fit[, pr[,1], drop=FALSE]) #same for the assigned rankings
+  G <- sum(PS$O * abs(sy - sf)) #total distance on the observed pairs
+  O <- sum(PS$O) #observed pairs
+  return(list(tau = 1 - G/O, error = G/(2*O)))
 
 } #end function
 
@@ -883,6 +1006,12 @@ ranksplit = function(Y,X,N,nomin,namespreds,xID,PS=NULL,control=NULL)
           NR <- matrix(NL[nh+1,], nh, ncol(NL), byrow=TRUE) - NL[1:nh, , drop=FALSE]
           PL <- PL[1:nh, , drop=FALSE]
           NL <- NL[1:nh, , drop=FALSE]
+          OL <- OR <- NULL #judges observing each pair (unranked = "unknown" only)
+          if (!is(PS$O,"NULL")) {
+            OL <- colcumsum(rowsum(PS$O[xID[ok], , drop=FALSE], g[ok], reorder=TRUE)) #left child, cumulative
+            OR <- matrix(OL[nh+1,], nh, ncol(OL), byrow=TRUE) - OL[1:nh, , drop=FALSE] #right child
+            OL <- OL[1:nh, , drop=FALSE]
+          }
 
           if (med) {
             #cutting points considered: all, or at most maxcuts of them, those
@@ -895,8 +1024,8 @@ ranksplit = function(Y,X,N,nomin,namespreds,xID,PS=NULL,control=NULL)
             #median impurity of the two children for every cutting point considered
             primp <- rep(-Inf, nh) #the other cutting points are never chosen
             primp[ks]=sapply(ks, function(k)
-              ImpFather-( medcounts(PL[k,],NL[k,],mL[k],items,control)$G/N +
-                            medcounts(PR[k,],NR[k,],mR[k],items,control)$G/N ) )
+              ImpFather-( medcounts(PL[k,],NL[k,],mL[k],items,control,if (is(OL,"NULL")) NULL else OL[k,])$G/N +
+                            medcounts(PR[k,],NR[k,],mR[k],items,control,if (is(OR,"NULL")) NULL else OR[k,])$G/N ) )
           } else {
           #same operations, in the same order, as the code above
           primp=ImpFather-( ( ifelse(mL==1,0,(pairsumkemd(PL,NL,mL)/mL)/N) ) +
@@ -928,6 +1057,7 @@ ranksplit = function(Y,X,N,nomin,namespreds,xID,PS=NULL,control=NULL)
     else{
       
       PSnode <- if (is(PS,"NULL")) NULL else list(P=PS$P[xID, , drop=FALSE], N=PS$N[xID, , drop=FALSE])
+      if (!is(PS$O,"NULL")) {PSnode$O <- PS$O[xID, , drop=FALSE]} #judges observing each pair ("unknown")
       Nspl=nominalsplit(x,Y[xID,],ImpFather,N,PSnode,control)
       if (Nspl$Decr==0){
         

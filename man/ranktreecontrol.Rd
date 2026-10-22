@@ -27,7 +27,8 @@ ranktreecontrol(
   maxcuts = NULL,
   nbuckets = NULL,
   bucketsizes = NULL,
-  topk = NULL
+  topk = NULL,
+  unranked = c("last", "unknown")
 )
 }
 \arguments{
@@ -112,6 +113,16 @@ positions 1, ..., k and the others tied in position k + 1), with the exact algor
 its BOLT heuristic when \code{algorithm = "BOLT"}. Not to be confused with top-k \emph{data} (see \code{model =
 "mallows"}). Default \code{NULL}: no constraint. At most one of \code{nbuckets}, \code{bucketsizes} and \code{topk}
 can be given, and not with \code{full = TRUE}}
+
+\item{unranked}{(\code{model = "kemeny"} only) How the objects not ranked by a judge (coded as \code{NA}) are
+treated: \code{"last"} (default) or \code{"unknown"}. With \code{"last"} the objects not ranked by a judge are tied
+in the position after his or her last ranked object, as in D'Ambrosio and Heiser (2016): two such objects count as a
+tie, and each of them comes after every ranked object. With \code{"unknown"} the objects not ranked by a judge come
+after his or her ranked objects, but their order is unknown: a pair of two such objects is not observed and does not
+count, neither as a preference nor as a tie. This is the natural convention for top-k lists ("choose and rank k objects
+out of n"), and it requires \code{impurity = "median"}: the impurity, \code{tau} and \code{error} of the nodes,
+\code{prunecost = "error"} and \code{validatetree} are then computed on the observed pairs only. Without missing
+values the two options give the same tree}
 }
 \value{
 A list containing all the control parameters

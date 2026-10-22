@@ -83,6 +83,20 @@
   measures based on them) change; with `impurity = "median"` the impurity is
   the sum of the distances from the constrained consensus, so the constraint
   drives the splits. `print()` reports the constraint.
+* Objects not ranked by the judges in `ranktree()` (`model = "kemeny"`): new
+  option `unranked` of `ranktreecontrol()`. With `"last"` (default) the
+  objects coded as `NA` are tied in the position after the last object ranked
+  by the judge, as in D'Ambrosio and Heiser (2016) (before, rankings with `NA`
+  gave an error; without `NA` the trees are unchanged). With `"unknown"` (only
+  with `impurity = "median"`) they come after the ranked objects but in unknown
+  order: a pair of two objects not ranked by a judge is not observed and counts
+  neither as a preference nor as a tie. For each pair only the judges who rank
+  at least one of its objects enter the combined input matrix of a node, and
+  the impurity, `tau`, `error` (weighted by the observed pairs), `prunecost =
+  "error"` and `validatetree()` are computed on the observed pairs only. For
+  top-k lists the combined input matrix is the average of the matrices of all
+  the completions of the lists. This convention is not in D'Ambrosio and
+  Heiser (2016). `print()` reports it.
 
 ### Differences from Lee and Yu (2010) in `model = "mallows"`
 

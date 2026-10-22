@@ -32,6 +32,9 @@
 #'
 #' @details With \code{model = "mallows"} the test rankings can be top-k partial rankings as for
 #' \code{\link{ranktree}} (unranked objects coded as \code{NA} or tied in the last position).
+#' With \code{model = "kemeny"} the objects not ranked (\code{NA}) in the test rankings are treated as in the tree
+#' (option \code{unranked} of \code{\link{ranktreecontrol}}): with \code{"last"} they are tied after the last ranked
+#' object; with \code{"unknown"} tau and error are computed on the observed pairs only.
 #'
 #' @references Lee, P.H., and Yu, P.L.H. (2010). Distance-based tree models for ranking data.
 #' Computational Statistics and Data Analysis, 54, 1672-1682.
@@ -68,6 +71,10 @@ validatetree <- function(Tree,testX=NULL,testY=NULL,method="test",V=5,plotting=T
   nitems <- ncol(Tree$Y)
   #rule "mallows": deviance of the Mallows models of the leaves
   mallowsrule <- identical(Tree$control$model,"mallows")
+  #objects not ranked in unknown order: tau and error on the observed pairs only
+  unknown <- !mallowsrule && identical(Tree$control$unranked,"unknown")
+  errnorm <- nitems*(nitems-1) #normalization of the error (already done with unknown)
+  if (unknown) {errnorm <- 1}
   if (method=="test"){#test set 
     
     if (is(testX,"NULL")){stop("The test set must be included")}
@@ -93,15 +100,22 @@ validatetree <- function(Tree,testX=NULL,testY=NULL,method="test",V=5,plotting=T
       return(validate)
     }
 
+    if (!unknown && anyNA(testY)) {testY <- fillunranked(as.matrix(testY))} #unranked = "last"
     for (j in 1:length(taos)){
       yfit <- predict.ranktree(Tree$subtrees[[j]],testX)$rankings
+      if (unknown) {
+        uf <- unknownfit(as.matrix(testY),yfit) #observed pairs only
+        taos[j] <- uf$tau
+        errors[j] <- uf$error
+        next
+      }
       taos[j] <- mean(diag(tau_x(testY,yfit)))
-      
-      
-      
+
+
+
       errors[j] <- mean(diag(kemenyd(testY,yfit)))
-      
-      
+
+
     }
     
     
@@ -112,7 +126,7 @@ validatetree <- function(Tree,testX=NULL,testY=NULL,method="test",V=5,plotting=T
     
     validate=list()
     validate$tau <- taos
-    validate$error <- errors/(nitems*(nitems-1)) #normalized error
+    validate$error <- errors/errnorm #normalized error
     validate$termnodes <- Tree$pruneinfo$termnodes
     validate$best_tau <- Tree$pruneinfo$termnodes[best]
     validate$best_error <- Tree$pruneinfo$termnodes[beste]
@@ -186,9 +200,15 @@ validatetree <- function(Tree,testX=NULL,testY=NULL,method="test",V=5,plotting=T
     }
 
     
+    if (unknown) {
+      #observed pairs only
+      taos <- sapply(fitcv,function(x) unknownfit(Tree$Y,x)$tau)
+      errors <- sapply(fitcv,function(x) unknownfit(Tree$Y,x)$error)
+    } else {
     taos <- sapply(fitcv,function(x) mean(diag(tau_x(x,Tree$Y))))
-    
+
     errors <- sapply(fitcv,function(x) mean(diag(kemenyd(x,Tree$Y))))
+    }
     
     best <- which.max(taos)
     beste <- which.min(errors)
@@ -198,11 +218,11 @@ validatetree <- function(Tree,testX=NULL,testY=NULL,method="test",V=5,plotting=T
     
     validate=list()
     validate$tau <- taos
-    validate$error <- errors/(nitems*(nitems-1)) #normalized error
+    validate$error <- errors/errnorm #normalized error
     validate$termnodes <- Tree$pruneinfo$termnodes
     validate$best_tau <- Tree$pruneinfo$termnodes[best]
     validate$best_error <- Tree$pruneinfo$termnodes[beste]
-    
+
     validate$validation <- validation
     
     

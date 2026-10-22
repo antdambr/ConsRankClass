@@ -54,6 +54,15 @@
 #' its BOLT heuristic when \code{algorithm = "BOLT"}. Not to be confused with top-k \emph{data} (see \code{model =
 #' "mallows"}). Default \code{NULL}: no constraint. At most one of \code{nbuckets}, \code{bucketsizes} and \code{topk}
 #' can be given, and not with \code{full = TRUE}
+#' @param unranked (\code{model = "kemeny"} only) How the objects not ranked by a judge (coded as \code{NA}) are
+#' treated: \code{"last"} (default) or \code{"unknown"}. With \code{"last"} the objects not ranked by a judge are tied
+#' in the position after his or her last ranked object, as in D'Ambrosio and Heiser (2016): two such objects count as a
+#' tie, and each of them comes after every ranked object. With \code{"unknown"} the objects not ranked by a judge come
+#' after his or her ranked objects, but their order is unknown: a pair of two such objects is not observed and does not
+#' count, neither as a preference nor as a tie. This is the natural convention for top-k lists ("choose and rank k objects
+#' out of n"), and it requires \code{impurity = "median"}: the impurity, \code{tau} and \code{error} of the nodes,
+#' \code{prunecost = "error"} and \code{validatetree} are then computed on the observed pairs only. Without missing
+#' values the two options give the same tree
 #' @param dist (\code{model = "mallows"} only) The distance of the Mallows model. Only \code{"kendall"}
 #' is available at present
 #' @param minprop (\code{model = "mallows"} only) Minimum size of each child node, as a proportion of
@@ -86,7 +95,8 @@ ranktreecontrol <- function(num=NULL, decrmin=0.01, algorithm="quick",full=FALSE
                              model=c("kemeny","mallows"), impurity="pairwise",
                              dist="kendall", minprop=NULL, lambdamax=50,
                              otp=TRUE, maxjudges=Inf, maxcuts=NULL,
-                             nbuckets=NULL, bucketsizes=NULL, topk=NULL)
+                             nbuckets=NULL, bucketsizes=NULL, topk=NULL,
+                             unranked=c("last","unknown"))
 
 {
 
@@ -107,6 +117,10 @@ ranktreecontrol <- function(num=NULL, decrmin=0.01, algorithm="quick",full=FALSE
   prunecost <- match.arg(prunecost)
   model <- match.arg(model)
   impurity <- match.arg(impurity, c("pairwise","median"))
+  unranked <- match.arg(unranked) #objects not ranked by a judge: "last" or "unknown"
+  if (model=="kemeny" && unranked=="unknown" && impurity!="median"){
+    stop("unranked = \"unknown\" requires impurity = \"median\": with the pairwise impurity the distance between two judges is not defined on the pairs that neither of them ranked. Use impurity = \"median\", or unranked = \"last\".")
+  }
   dist <- .matchdist(dist)
   if (model=="mallows" && dist!="kendall"){
     stop("model = \"mallows\" is available for the Kendall distance only")
@@ -149,7 +163,7 @@ ranktreecontrol <- function(num=NULL, decrmin=0.01, algorithm="quick",full=FALSE
 
   #options that do not concern the chosen model
   kemenyonly <- c("algorithm","full","itermax","np","gl","ff","cr","proc","ps","prunecost","impurity",
-                  "otp","maxjudges","maxcuts","nbuckets","bucketsizes","topk")
+                  "otp","maxjudges","maxcuts","nbuckets","bucketsizes","topk","unranked")
   mallowsonly <- c("dist","minprop","lambdamax")
   ignored <- intersect(setbyuser, if (model=="mallows") kemenyonly else mallowsonly)
   if (model=="kemeny" && impurity=="pairwise" && "maxcuts" %in% setbyuser){
@@ -164,5 +178,5 @@ ranktreecontrol <- function(num=NULL, decrmin=0.01, algorithm="quick",full=FALSE
   return(list(num=num,decrmin=decrmin, algorithm=algorithm, full=full, itermax=itermax, np=np, gl=gl, ff=ff,
               cr=cr, proc=proc, ps=ps, prunecost=prunecost, model=model, impurity=impurity, dist=dist,
               minprop=minprop, lambdamax=lambdamax, otp=otp, maxjudges=maxjudges, maxcuts=maxcuts,
-              nbuckets=nbuckets, bucketsizes=bucketsizes, topk=topk))
+              nbuckets=nbuckets, bucketsizes=bucketsizes, topk=topk, unranked=unranked))
 }
