@@ -16,7 +16,8 @@ it shows the summary of the prediction tree. For a tree built with \code{model =
 (see \code{\link{ranktree}}) it shows, for each leaf, the modal ranking and the precision
 \eqn{\lambda}{lambda} of the Mallows model, \eqn{\phi = e^{-\lambda}}{phi = exp(-lambda)}, the expected
 Kendall distance of a complete ranking from the modal ranking and the log-likelihood of the rankings in
-the leaf, and it returns (invisibly) these values as a data frame
+the leaf, and it returns (invisibly) these values as a data frame. For the other trees it returns
+(invisibly) the paths of the leaves, as given by \code{\link{treepaths}}
 }
 \description{
 Summary methods for objects of class \code{ranktree}

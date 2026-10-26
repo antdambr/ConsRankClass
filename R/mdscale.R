@@ -121,7 +121,7 @@
 #' Nocedal, J., and Wright, S.J. (2006). Numerical Optimization (2nd ed.). Springer,
 #' New York.
 #'
-#' @author Antonio D'Ambrosio \email{antdambr@unina.it}
+#' @author Antonio D'Ambrosio \email{antdambr@unina.it}, Luca Coraggio \email{luca.coraggio@unina.it}
 #'
 #' @seealso \code{\link{mdscalecontrol}}, \code{\link{plot.mdscale}},
 #'   \code{\link{kunfolding}}, \code{\link[stats]{cmdscale}}

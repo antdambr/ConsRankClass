@@ -169,7 +169,7 @@ New York.
   \code{\link{kunfolding}}, \code{\link[stats]{cmdscale}}
 }
 \author{
-Antonio D'Ambrosio \email{antdambr@unina.it}
+Antonio D'Ambrosio \email{antdambr@unina.it}, Luca Coraggio \email{luca.coraggio@unina.it}
 }
 \keyword{Multidimensional}
 \keyword{scaling}

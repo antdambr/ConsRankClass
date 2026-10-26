@@ -141,9 +141,8 @@ cca <- function(X,k,control=ccacontrol(...), ...){
   }#end if
   
   class(out) <- c("cca","ConsRankClass")
-  
-  print(out)
-  
+
+  #the result is no longer printed here: it is printed by print.cca when the object is shown
   return(out)
 
   

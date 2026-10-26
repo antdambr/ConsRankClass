@@ -1,6 +1,38 @@
 # ConsRankClass 1.1.0
 
+## Contributors
+
+* Luca Coraggio (contributor) is the author of the descriptive tools
+  (`marginals()`, `pairmatrix()`, `rankproj()`, `objclust()`, `judgemds()`, with
+  their `print` and `plot` methods) and, with Antonio D'Ambrosio, of `mdscale()`.
+
 ## New features
+
+* `plot.ranktree()`: new option `style = "compact"` (default `"classic"`, the
+  drawing used so far, unchanged), a black and white drawing of the tree from
+  left to right, with the condition of each branch written on it and the
+  terminal nodes aligned on the right with their class (with a top-k consensus
+  only the first k objects), size and Tau_x; option `cex` for the size of its
+  text.
+* `validatetree()`: new argument `se` (default 0) for the s-SE rule. The
+  standard error of the Tau_x of each subtree is returned (`tause`): with
+  `unranked = "last"` it is the standard deviation of the Tau_x of the judges
+  divided by sqrt(m); with `unranked = "unknown"` (Tau_x on the observed pairs, a
+  ratio) it is the first-order standard error of a ratio estimator. The subtree
+  chosen by the rule (`best_tause`) is the smallest one whose Tau_x is at least
+  the largest Tau_x minus `se` times its standard error; with `se = 0` it is
+  `best_tau`. With cross-validation the standard error is an approximation, as
+  in Breiman et al. (1984). With `model = "mallows"` the same rule is applied to
+  the deviance (`best_deviancese`; `best_deviance1se` is unchanged). All the
+  previous components are unchanged.
+* `plot.kunfolding()`: new option `bw = TRUE` for a black and white plot
+  (individuals as grey points, groups given by `cols` as different symbols with
+  a legend, items in black with their labels above them). The default plot is
+  unchanged.
+* `plot.rankproj()`: new options `labpos` (position of the names of the objects
+  with respect to the tips of their poles: below, left, above, right; for all
+  the objects or for some of them) and `laboffset` (shifts of single names), to
+  separate overlapping names. The default plot is unchanged.
 
 * Distances between complete rankings: `rankdist()`, `kendalld()`, `cayleyd()`,
   `hammingd()`, `ulamd()`, `footruled()`, `spearmand()`, and their exact
@@ -243,6 +275,28 @@
   (with `engine = "mdscale"` too, criterion `"sstress"`).
 * `kunfolding()`: the messages were printed also with `printscr = FALSE`; now
   nothing is printed.
+* `kunfolding()`: with a judge who ties all the items the Pearson, Spearman and
+  Kendall correlations of that judge are not defined, and the averaged
+  correlations (`avgedpearson`, `avgspearman`, `avgkendall` and the recovery
+  measures) were `NA`, with warnings from `cor()`. Now these averages are
+  computed on the other judges, with one warning saying how many judges were
+  excluded; such judges stay in the solution and in the averaged Tau_X. Without
+  such judges the results do not change.
+* `predict.ranktree()`: the column `leafid` of `info` was the position of the
+  leaf in the internal list of the nodes (e.g. 10 for the node 14); it is now the
+  node number, as in `print()`, `summary()` and `nodepath()`. The predicted
+  rankings and orderings do not change.
+* `cca()`: the result was printed inside the function, also when assigned;
+  now it is printed only when shown (`print.cca()`). The result does not change.
+* `summary.ranktree()`: `NULL` was printed at the end of the summary; now the
+  paths of the leaves are returned invisibly.
+* Typos: "itrems" in `print.kunfolding()`; the row "Sperman" (now "Spearman") of
+  the component `resumeaug` of `kunfolding()` and `res` of `augmatrix()`.
+* `plot.kunfolding()`: `cols` given as a factor gave the warning "'+' not
+  meaningful for factors" and no colours; now the groups of a factor (or of a
+  character vector) are used. Numeric `cols` as before.
+* Help of `EVS`: 1911 respondents (not 3584), the `NaN` of the rankings and
+  their treatment in `ranktree()`, country names.
 
 # ConsRankClass 1.0.2
 

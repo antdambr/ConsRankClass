@@ -7,9 +7,23 @@
 #' @param dispclass Display the median ranking above terminal nodes. Default option: FALSE
 #' @param valtree If plot.type="pruningseq", it shows the Tau_x rank correlation coefficient or the error along the pruning sequence on the training set. If valtree is the output of the function \code{validatetree}, it shows either the Tau_x rank correlation coefficient or the error along the pruning sequence of also the decision tree (validated by wither test set or cross-validation)
 #' @param taos If plot.type="pruningseq", it plots the Tau_x rank correlation coefficient along the pruning sequence. If taos=FALSE, it plots the error.
+#' @param style If plot.type="tree", the drawing of the tree: \code{"classic"} (default, the drawing
+#' used so far) or \code{"compact"}, a black and white drawing from left to right (see details).
+#' @param cex Only for \code{style = "compact"}: a factor that enlarges (> 1) or reduces (< 1) all the
+#' text of the drawing. Default 1.
 #' @param \dots System reserved (No specific usage)
 #'
-#' @details For a tree built with \code{model = "mallows"} (see \code{\link{ranktree}}) the terminal nodes
+#' @details With \code{style = "compact"} the tree grows from left to right, in black and white: each
+#' internal node is a dot, the condition of each branch is written on it (for a nominal predictor the
+#' categories present in the child node, or the categories excluded if they are fewer; for a numeric
+#' predictor the bound), and the terminal nodes are aligned on the right, each with its class (as an
+#' ordering: objects tied in a bucket in parentheses; with \code{topk} in \code{\link{ranktreecontrol}}
+#' only the first k objects), its size and its Tau_x (on the observed pairs with
+#' \code{unranked = "unknown"}). The classes are always displayed, so \code{dispclass} is ignored.
+#' The labels of the branches are wrapped to fit their length: for a large tree, enlarge the
+#' plotting region or reduce \code{cex}.
+#'
+#' For a tree built with \code{model = "mallows"} (see \code{\link{ranktree}}) the terminal nodes
 #' display the modal ranking of the Mallows model (\code{dispclass=TRUE}), and the pruning sequence shows
 #' the mean deviance per ranking on the training set and, if \code{valtree} is given, on the test set or in
 #' cross-validation, with bars of plus/minus one standard error and the subtree chosen by the 1-SE rule
@@ -25,7 +39,8 @@
 #' data("Univranks")
 #' tree <- ranktree(Univranks$rankings,Univranks$predictors,num=50)
 #' plot(tree,dispclass=TRUE)
-#'   
+#' plot(tree,style="compact")
+#'
 #' \donttest{
 #' data(EVS)
 #' EVS$rankings[is.na(EVS$rankings)] <- 3
@@ -52,14 +67,20 @@
 
 
 plot.ranktree <- function(x,plot.type="tree",dispclass=FALSE,valtree=NULL,
-                          taos=TRUE,...){
-  
-  
+                          taos=TRUE,style=c("classic","compact"),cex=1,...){
+
+
   #x is an object of class "ranktree"
-  
+
   Tree <- x
   plot.type <- match.arg(plot.type, c("tree", "pruningseq"), several.ok = FALSE)
-  
+  style <- match.arg(style)
+
+  if (plot.type == "tree" && style == "compact") {
+    plotcompacttree(Tree, cex)
+    return(invisible(NULL))
+  }
+
   if (plot.type == "tree") {
     
     tsynth <- Tree$tsynth

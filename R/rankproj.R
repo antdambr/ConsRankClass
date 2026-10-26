@@ -56,7 +56,7 @@
 #'   Cohen, A., and Mallows, C.L. (1980). Analysis of ranking data. Technical
 #'   memorandum, Bell Telephone Laboratories, Murray Hill, NJ.
 #'
-#' @author Antonio D'Ambrosio \email{antdambr@unina.it}
+#' @author Luca Coraggio \email{luca.coraggio@unina.it}
 #'
 #' @seealso \code{\link{plot.rankproj}}, \code{\link{marginals}},
 #'   \code{\link{pairmatrix}}

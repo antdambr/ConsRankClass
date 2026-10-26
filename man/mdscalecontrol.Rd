@@ -46,5 +46,5 @@ ctl <- mdscalecontrol(maxiter = 500, tolfun = 1e-6)
 \code{\link{mdscale}}
 }
 \author{
-Antonio D'Ambrosio \email{antdambr@unina.it}
+Antonio D'Ambrosio \email{antdambr@unina.it}, Luca Coraggio \email{luca.coraggio@unina.it}
 }

@@ -57,3 +57,6 @@ plot(marginals(Univranks$rankings), values = TRUE)
 \seealso{
 \code{\link{marginals}}
 }
+\author{
+Luca Coraggio \email{luca.coraggio@unina.it}
+}

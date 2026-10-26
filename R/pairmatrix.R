@@ -51,7 +51,7 @@
 #'   application to the consensus ranking problem. Journal of Multi-Criteria
 #'   Decision Analysis, 11, 17-28.
 #'
-#' @author Antonio D'Ambrosio \email{antdambr@unina.it}
+#' @author Luca Coraggio \email{luca.coraggio@unina.it}
 #'
 #' @seealso \code{\link{plot.pairmatrix}}, \code{\link{marginals}}
 #'

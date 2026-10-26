@@ -64,5 +64,5 @@ Marden, J.I. (1995). Analyzing and Modeling Rank Data. Chapman &
 \code{\link{plot.marginals}}, \code{\link{pairmatrix}}
 }
 \author{
-Antonio D'Ambrosio \email{antdambr@unina.it}
+Luca Coraggio \email{luca.coraggio@unina.it}
 }

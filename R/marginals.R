@@ -38,7 +38,7 @@
 #' @references Marden, J.I. (1995). Analyzing and Modeling Rank Data. Chapman &
 #'   Hall, London.
 #'
-#' @author Antonio D'Ambrosio \email{antdambr@unina.it}
+#' @author Luca Coraggio \email{luca.coraggio@unina.it}
 #'
 #' @seealso \code{\link{plot.marginals}}, \code{\link{pairmatrix}}
 #'

@@ -57,3 +57,6 @@ plot(pairmatrix(Univranks$rankings))
 \seealso{
 \code{\link{pairmatrix}}
 }
+\author{
+Luca Coraggio \email{luca.coraggio@unina.it}
+}

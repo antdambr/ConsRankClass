@@ -36,5 +36,5 @@ summary(out)
 \code{\link{mdscale}}, \code{\link{plot.mdscale}}
 }
 \author{
-Antonio D'Ambrosio \email{antdambr@unina.it}
+Antonio D'Ambrosio \email{antdambr@unina.it}, Luca Coraggio \email{luca.coraggio@unina.it}
 }

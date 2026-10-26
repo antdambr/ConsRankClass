@@ -31,6 +31,8 @@
 #'
 #' @importFrom lattice xyplot panel.points panel.text panel.abline
 #' @importFrom grid grid.circle unit gpar
+#' @author Luca Coraggio \email{luca.coraggio@unina.it}
+#'
 #' @export
 
 plot.marginals <- function(x, order = c("meanrank", "none"), meanrank = TRUE,

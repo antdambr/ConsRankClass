@@ -11,7 +11,7 @@
 #'
 #' @return The object, invisibly.
 #'
-#' @author Antonio D'Ambrosio \email{antdambr@unina.it}
+#' @author Antonio D'Ambrosio \email{antdambr@unina.it}, Luca Coraggio \email{luca.coraggio@unina.it}
 #'
 #' @seealso \code{\link{mdscale}}, \code{\link{plot.mdscale}}
 #'

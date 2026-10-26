@@ -10,7 +10,8 @@ validatetree(
   testY = NULL,
   method = "test",
   V = 5,
-  plotting = TRUE
+  plotting = TRUE,
+  se = 0
 )
 }
 \arguments{
@@ -25,6 +26,10 @@ validatetree(
 \item{V}{The cross-validation parameter. Default V=5}
 
 \item{plotting}{With the default option plotting=TRUE, the pruning sequence plot is visualized}
+
+\item{se}{The multiplier \eqn{s} of the s-SE rule (see Details). Default \code{se = 0}: the chosen
+subtree is the one with the largest Tau_x (\code{best_tau}); \code{se = 1} gives the 1-SE rule of
+Breiman et al. (1984).}
 }
 \value{
 A list containing:
@@ -34,6 +39,9 @@ error \tab  \tab the error of the sequence of the trees\cr
 termnodes\tab \tab the number of terminal nodes of the sequence of the trees\cr
 best_tau \tab \tab the best tree in terms of Tau_x rank correlation coefficient\cr
 best_error \tab \tab the best tree in terms of error (it is the same)\cr
+tause \tab \tab the standard error of the Tau_x of the sequence of the trees\cr
+se \tab \tab the multiplier \eqn{s} of the s-SE rule\cr
+best_tause \tab \tab the tree chosen by the s-SE rule (with \code{se = 0}, \code{best_tau})\cr
 validation \tab \tab information about the validation procedure}
 If the tree was built with \code{model = "mallows"} (see \code{\link{ranktree}}) the subtrees are
 evaluated by the deviance of the Mallows models of their leaves, and the list contains:
@@ -45,6 +53,9 @@ devse \tab \tab the standard error of the mean deviance\cr
 best_deviance \tab \tab the best tree in terms of deviance\cr
 best_deviance1se \tab \tab the smallest tree whose deviance is within one standard error of the
 minimum (1-SE rule, as in Lee and Yu, 2010)\cr
+se \tab \tab the multiplier \eqn{s} of the s-SE rule\cr
+best_deviancese \tab \tab the smallest tree whose deviance is within \eqn{s} standard errors of the
+minimum (with \code{se = 0}, \code{best_deviance}; with \code{se = 1}, \code{best_deviance1se})\cr
 validation \tab \tab information about the validation procedure}
 }
 \description{
@@ -56,6 +67,26 @@ With \code{model = "mallows"} the test rankings can be top-k partial rankings as
 With \code{model = "kemeny"} the objects not ranked (\code{NA}) in the test rankings are treated as in the tree
 (option \code{unranked} of \code{\link{ranktreecontrol}}): with \code{"last"} they are tied after the last ranked
 object; with \code{"unknown"} tau and error are computed on the observed pairs only.
+
+\strong{Standard error of Tau_x and s-SE rule.} Each subtree is evaluated on \eqn{m} judges: the
+judges of the test set, or, with \code{method = "cv"}, all the judges, each of them predicted by the
+tree grown without its fold. With \code{unranked = "last"} the Tau_x of a subtree is the mean of the
+Tau_x \eqn{\tau_h} between the rankings of the judges and the classes of their leaves,
+\eqn{\bar\tau = \sum_h \tau_h / m}, and its standard error is
+\deqn{SE = \sqrt{\sum_h (\tau_h - \bar\tau)^2 / (m(m-1))},}{SE = sqrt(sum_h (tau_h - taubar)^2 / (m(m-1))),}
+i.e. the standard deviation of the \eqn{\tau_h} divided by \eqn{\sqrt m}. With \code{unranked =
+"unknown"} the Tau_x is computed on the pairs observed by each judge: \eqn{\bar\tau = \sum_h a_h /
+\sum_h O_h}, where \eqn{O_h} is the number of pairs observed by the judge \eqn{h} and \eqn{a_h = O_h
+- G_h}, \eqn{G_h} being the Kemeny distance between the judge and its class on these pairs. This is
+a ratio estimator, whose standard error is (first-order approximation)
+\deqn{SE = \sqrt{\sum_h (a_h - \bar\tau O_h)^2 / (m(m-1))} / \bar O,}{SE = sqrt(sum_h (a_h - taubar O_h)^2 / (m(m-1))) / Obar,}
+with \eqn{\bar O = \sum_h O_h / m}; when all the judges observe the same number of pairs it
+coincides with the previous formula. The s-SE rule chooses the smallest subtree whose Tau_x is at
+least \eqn{\bar\tau_{max} - s\,SE_{max}}, where \eqn{\bar\tau_{max}} is the largest Tau_x of the
+sequence and \eqn{SE_{max}} its standard error (Breiman et al., 1984, Section 3.4.3). With
+cross-validation the \eqn{\tau_h} are not independent, because the trees of the folds share most
+of the judges, and the standard error is only an approximation, as for the classification and
+regression trees (Breiman et al., 1984, Section 11.5).
 }
 \examples{
 \donttest{
@@ -65,13 +96,20 @@ set.seed(654)
 training=sample(1911,1434)
 tree <- ranktree(EVS$rankings[training,],EVS$predictors[training,],decrmin=0.001,num=50)
 #test set validation
-vtreetest <- validatetree(tree,testX=EVS$predictors[-training,],EVS$rankings[-training,]) 
+vtreetest <- validatetree(tree,testX=EVS$predictors[-training,],EVS$rankings[-training,])
+#the same with the 1-SE rule
+vtree1se <- validatetree(tree,testX=EVS$predictors[-training,],EVS$rankings[-training,],
+                         plotting=FALSE,se=1)
+vtree1se$best_tause
 #cross-validation
 vtreecv <- validatetree(tree,method="cv",V=10) 
 }
 
 }
 \references{
+Breiman, L., Friedman, J.H., Olshen, R.A., and Stone, C.J. (1984). Classification and
+Regression Trees. Wadsworth, Belmont, CA.
+
 Lee, P.H., and Yu, P.L.H. (2010). Distance-based tree models for ranking data.
 Computational Statistics and Data Analysis, 54, 1672-1682.
 }

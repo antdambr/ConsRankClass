@@ -13,6 +13,7 @@
   cexind = 1,
   cexitems = 1,
   pchcol = 15,
+  bw = FALSE,
   ...
 )
 }
@@ -25,13 +26,18 @@
 
 \item{main}{Main title of the plot. Default NULL}
 
-\item{cols}{Color of the individuals. It must be numeric. Default is NULL (dark gray).}
+\item{cols}{Groups of the individuals, drawn with different colours (with \code{bw = TRUE}, different symbols): numeric codes, or a factor. Default is NULL (dark gray).}
 
 \item{cexind}{cex of the individuals. Default 1}
 
 \item{cexitems}{cex of the items. defaul 1}
 
 \item{pchcol}{pch parameter for items points. Default 15}
+
+\item{bw}{Logical. If \code{TRUE}, a black and white plot: the individuals are grey points (without
+numbers, unless \code{labsrow} is given), the items black symbols with their labels above them. With
+\code{cols} (numeric groups of individuals) the groups are drawn with different symbols, with a legend.
+Default \code{FALSE} (the plot with colours).}
 
 \item{\dots}{System reserved (No specific usage)}
 }
@@ -46,6 +52,7 @@ data("breakfast", package="smacof")
 unfout <- kunfolding(breakfast)
 itemsl <- colnames(breakfast)
 plot(unfout,labs=itemsl,cexitems=0.8)
+plot(unfout,labs=itemsl,cexitems=0.8,bw=TRUE)
 
 }
 \seealso{

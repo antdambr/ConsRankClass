@@ -11,7 +11,7 @@
 #' \tabular{lll}{
 #' rankings \tab \tab the fit in terms of rankings\cr
 #' orderings \tab  \tab the fit in terms of orderings\cr
-#' info\tab \tab dataframe containing the terminal nodes in which the new x fall down, then the new x and the fit (in terms of rankings)
+#' info\tab \tab dataframe containing the terminal nodes in which the new x fall down (column \code{leafid}: the node numbers, as in \code{print}, \code{summary} and \code{nodepath}), then the new x and the fit (in terms of rankings)
 #' } 
 #'
 #'
@@ -87,6 +87,9 @@ predict.ranktree <- function(object,newx,...){
   rankings <- numfit
   colnames(rankings) <- c(colnames(numclass))
   infofit <- data.frame(cbind(xt[,-1]),rankings)
+  #downtree gives the position of the leaf in the list of the nodes: replace it by
+  #the node number (the one used by print, summary and nodepath)
+  infofit$leafid <- unlist(Tree$node$number[xt$leafid])
   
   return(list(rankings=rankings,orderings=orderings,info=infofit))
   

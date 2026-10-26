@@ -18,7 +18,7 @@ A list containing:
 \tabular{lll}{
 rankings \tab \tab the fit in terms of rankings\cr
 orderings \tab  \tab the fit in terms of orderings\cr
-info\tab \tab dataframe containing the terminal nodes in which the new x fall down, then the new x and the fit (in terms of rankings)
+info\tab \tab dataframe containing the terminal nodes in which the new x fall down (column \code{leafid}: the node numbers, as in \code{print}, \code{summary} and \code{nodepath}), then the new x and the fit (in terms of rankings)
 }
 }
 \description{

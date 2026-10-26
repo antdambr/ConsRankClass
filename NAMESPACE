@@ -81,8 +81,11 @@ importFrom(graphics,
   lines,
   par,
   plot,
+  plot.new,
+  plot.window,
   points,
   segments,
+  strwidth,
   text
 )
 importFrom(grid,

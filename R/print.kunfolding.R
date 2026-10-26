@@ -26,7 +26,7 @@ print.kunfolding <- function(x,...){
   }
   cat("Dimensions:", ncol(out$rowcoord), sep=" ", "\n")
   cat("Number of individuals:", nrow(out$rowcoord),sep=" ", "\n")
-  cat("Number of itrems:", nrow(out$colcoord), sep=" ", "\n\n")
+  cat("Number of items:", nrow(out$colcoord), sep=" ", "\n\n")
   
   cat("Augmented dissimilarity matrix measures:", "\n")
   print(out$resumeaug)

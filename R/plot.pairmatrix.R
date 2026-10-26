@@ -31,6 +31,8 @@
 #'
 #' @importFrom lattice levelplot panel.levelplot panel.text
 #' @importFrom grDevices grey
+#' @author Luca Coraggio \email{luca.coraggio@unina.it}
+#'
 #' @export
 
 plot.pairmatrix <- function(x, type = c("half", "strict", "ties"),

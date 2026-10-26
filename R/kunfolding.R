@@ -302,6 +302,9 @@ kunfolding=function(X,p=2,control=mdscontrol(...),...){
   AV_Tau_X <- AV_pearson
   #dij=fitd_unf
   x <- as.matrix(X)
+  #judges who tie all the items: Pearson, Spearman and Kendall correlations are not
+  #defined for them (their ranking has zero variance)
+  alltie <- apply(x, 1, function(r) length(unique(r)) == 1)
   for (j in 1:n_ind){
     XX <- t(X[j,])
     DD <- t(dij[j,])
@@ -317,18 +320,31 @@ kunfolding=function(X,p=2,control=mdscontrol(...),...){
     #    print(dim(t(X[j,])))
     #    print(class(t(dij[j,])))
     #    print(dim(t(dij[j,])))
+    if (alltie[j]){ #correlations not defined: NA (no call to cor, which would warn)
+      AV_pearson[j,1] <- AV_Spearman[j,1] <- AV_Kendall[j,1] <- NA
+    } else {
     AV_pearson[j,1] <- cor(as.matrix(x[j,]),as.matrix(dij[j,])) #averaged Pearson correlation
     AV_Spearman[j,1] <- cor(as.matrix(x[j,]),as.matrix(dij[j,]),method='spearman',use="pairwise") #averaged Spearman correlation
     AV_Kendall[j,1] <- cor(as.matrix(x[j,]),as.matrix(dij[j,]),method='kendall',use="pairwise") #averaged Kendall tau correlation
-    AV_Tau_X[j,1] <- tau_x(t(x[j,]),t(dij[j,])) #averaged Tau_X correlation
+    }
+    AV_Tau_X[j,1] <- tau_x(t(x[j,]),t(dij[j,])) #averaged Tau_X correlation (defined also with all ties)
   }
+  #the averaged correlations are computed on the judges for which they are defined
+  if (any(alltie)){
+    warning(sum(alltie), " judge(s) tie all the items: they are excluded from the averaged ",
+            "Pearson, Spearman and Kendall correlations (they are kept in the solution ",
+            "and in the averaged Tau_X).", call. = FALSE)
+  }
+  avpearson <- mean(AV_pearson, na.rm = TRUE)   #averaged Pearson correlation
+  avspearman <- mean(AV_Spearman, na.rm = TRUE) #averaged Spearman correlation
+  avkendall <- mean(AV_Kendall, na.rm = TRUE)   #averaged Kendall correlation
   #
   ncrecov <- c("Av recovered preferences","AV Pearson correlation","AV Spearman correlation",
                "AV Kendall correlation","AV Tau_X correlation")
-  
-  
-  resume_recov = data.frame(rbind(mean(AV_recov_pref),mean(AV_pearson),mean(AV_Spearman)
-                                  ,mean(AV_Kendall),mean(AV_Tau_X)))
+
+
+  resume_recov = data.frame(rbind(mean(AV_recov_pref),avpearson,avspearman
+                                  ,avkendall,mean(AV_Tau_X)))
   row.names(resume_recov)=ncrecov
   colnames(resume_recov)="Recovery Measures"
   
@@ -353,9 +369,9 @@ kunfolding=function(X,p=2,control=mdscontrol(...),...){
        kendallfit = fitKendall, #Kendall tau_b between transformed and fitted proximities
        tauxfit = fitTauX, #Tau_X between transformed and fitted proximities
        avgrecov=mean(AV_recov_pref), #Averaged recovery measure between raw preference data and fitted proximities
-       avgedpearson=mean(AV_pearson), #Averaged Pearson correlation between raw preference data and fitted proximities
-       avgspearman=mean(AV_Spearman), #Averaged Spearman rho between raw preference data and fitted proximities
-       avgkendall=mean(AV_Kendall), #Averaged Kendall taub between raw preference data and fitted proximities
+       avgedpearson=avpearson, #Averaged Pearson correlation between raw preference data and fitted proximities
+       avgspearman=avspearman, #Averaged Spearman rho between raw preference data and fitted proximities
+       avgkendall=avkendall, #Averaged Kendall taub between raw preference data and fitted proximities
        avgtaux=mean(AV_Tau_X), #Averaged Tau_X between raw preference data and fitted proximities
        resume=resume_unf, #Resume meausures
        resumerec=resume_recov, #Resume of recovery measures

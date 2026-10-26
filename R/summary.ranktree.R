@@ -9,7 +9,8 @@
 #'(see \code{\link{ranktree}}) it shows, for each leaf, the modal ranking and the precision
 #'\eqn{\lambda}{lambda} of the Mallows model, \eqn{\phi = e^{-\lambda}}{phi = exp(-lambda)}, the expected
 #'Kendall distance of a complete ranking from the modal ranking and the log-likelihood of the rankings in
-#'the leaf, and it returns (invisibly) these values as a data frame
+#'the leaf, and it returns (invisibly) these values as a data frame. For the other trees it returns
+#'(invisibly) the paths of the leaves, as given by \code{\link{treepaths}}
 #'
 #'@examples
 #'
@@ -51,5 +52,8 @@ summary.ranktree <- function(object,...){
   for (j in seq_len(ll)){
     cat(forsum$paths[[j]], "\n\n")
   }
+
+  #return the paths of the leaves invisibly (before, the value NULL of the loop was printed)
+  return(invisible(forsum))
 
 }

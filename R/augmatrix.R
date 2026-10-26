@@ -69,7 +69,7 @@ augmatrix <- function(X){
   MKendall <- mean(CorK)
   MSpearman <- mean(CorS)
   
-  nr <- c("TauX","Kendall","Sperman")
+  nr <- c("TauX","Kendall","Spearman")
   nc <- c("Average","Min","Max")
   
   res <- data.frame(cbind( rbind(MTau,MKendall,MSpearman), rbind(min(TauX),min(CorK),min(CorS)),

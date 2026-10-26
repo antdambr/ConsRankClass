@@ -68,5 +68,5 @@ plot(jm, groups = Univranks$predictors$Stud)
   \code{\link{rankproj}}, \code{\link{kunfolding}}
 }
 \author{
-Antonio D'Ambrosio \email{antdambr@unina.it}
+Luca Coraggio \email{luca.coraggio@unina.it}
 }

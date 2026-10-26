@@ -871,9 +871,12 @@ unknownfit <- function(Y, Fit){
   pr <- which(upper.tri(diag(ncol(Y))), arr.ind=TRUE) #pairs (a, b), a < b
   sy <- PS$P - PS$N #judge: 1 prefers a, -1 prefers b, 0 tie (or pair not observed)
   sf <- sign(Fit[, pr[,2], drop=FALSE] - Fit[, pr[,1], drop=FALSE]) #same for the assigned rankings
+  Gh <- rowSums(PS$O * abs(sy - sf)) #distance of each judge on its observed pairs
+  Oh <- rowSums(PS$O) #observed pairs of each judge
   G <- sum(PS$O * abs(sy - sf)) #total distance on the observed pairs
   O <- sum(PS$O) #observed pairs
-  return(list(tau = 1 - G/O, error = G/(2*O)))
+  #Gh and Oh are used by validatetree for the standard error of tau
+  return(list(tau = 1 - G/O, error = G/(2*O), Gh = Gh, Oh = Oh))
 
 } #end function
 

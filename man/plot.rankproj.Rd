@@ -13,6 +13,8 @@
   main = NULL,
   xlab = NULL,
   ylab = NULL,
+  labpos = NULL,
+  laboffset = NULL,
   ...
 )
 }
@@ -39,6 +41,19 @@ Default 3.}
 \item{xlab, ylab}{Labels of the axes. Default: the dimension and its
 proportion of the sum of the eigenvalues.}
 
+\item{labpos}{Position of the names of the objects with respect to the tips
+of their poles, coded as in \code{\link[graphics]{text}}: 1 below, 2 left,
+3 above, 4 right. A single value for all the objects, one value for each
+object, or a named vector for some objects only (e.g.
+\code{c(Tennis = 1)}). Default \code{NULL}: left of the tip for the poles
+pointing left, right of it for the others.}
+
+\item{laboffset}{Shifts of the names of the objects, to separate
+overlapping names: a named list of vectors \code{c(dx, dy)} in the units
+of the plot (the unit circle has radius 1), e.g.
+\code{list(Tennis = c(0, -0.08))}, or a matrix with two columns and one
+row for each object. Default \code{NULL} (no shift).}
+
 \item{\dots}{Other arguments passed to \code{\link[lattice]{xyplot}}.}
 }
 \value{
@@ -56,8 +71,14 @@ drawn as a reference.
 \examples{
 data(sports, package = "ConsRank")
 plot(rankproj(sports))
+# names of the objects moved by hand
+plot(rankproj(sports), labpos = c(Tennis = 2, Cycling = 3),
+     laboffset = list(Swimming = c(0, -0.06)))
 
 }
 \seealso{
 \code{\link{rankproj}}
+}
+\author{
+Luca Coraggio \email{luca.coraggio@unina.it}
 }

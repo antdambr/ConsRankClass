@@ -42,7 +42,7 @@
 #' items \tab the names of the objects
 #' }
 #'
-#' @author Antonio D'Ambrosio \email{antdambr@unina.it}
+#' @author Luca Coraggio \email{luca.coraggio@unina.it}
 #'
 #' @seealso \code{\link{plot.judgemds}}, \code{\link{mdscale}},
 #'   \code{\link{rankproj}}, \code{\link{kunfolding}}
