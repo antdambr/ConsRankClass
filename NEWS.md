@@ -288,6 +288,19 @@
   rankings and orderings do not change.
 * `cca()`: the result was printed inside the function, also when assigned;
   now it is printed only when shown (`print.cca()`). The result does not change.
+* `cca()`: when two cluster centres became identical during the iterations, a
+  judge equal to them had zero distance from both, its membership
+  probabilities were 0/0 = `NaN` and `consrank()` stopped with an error (with
+  `itercca > 1` one such start stopped the whole call). Now such a judge gets
+  equal membership probabilities on the coincident centres, and each duplicate
+  centre is replaced by the ranking of the judge farthest from the other
+  centres (at most 10 re-initializations per start). New components
+  `degenerate` (the final centres are not all distinct, with a warning) and
+  `reinit` (number of re-initializations); with `itercca > 1` the best start is
+  chosen among the non-degenerate ones. Starts without coincident centres give
+  the same results as before.
+* `cca()`: with `itercca > 1` the component `consrankout` was always `NULL`; it
+  is now the output of `consrank()` for the best start.
 * `summary.ranktree()`: `NULL` was printed at the end of the summary; now the
   paths of the leaves are returned invisibly.
 * Typos: "itrems" in `print.kunfolding()`; the row "Sperman" (now "Spearman") of

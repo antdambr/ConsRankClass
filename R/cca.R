@@ -19,7 +19,15 @@
 #' in the case of maximum uncertainty Us=1. "Ucca" is the average of all the "Us".
 #' "Uprods" is the product of the membership probabilities of each individual, normalized in such a way that
 #' in the case of maximum uncertainty Uprods=1. "Uprodscca" is the average of all the "Uprods".
-#' 
+#'
+#' If two cluster centres coincide during the iterations, they would receive the same membership
+#' probabilities and remain equal, so that the solution would have fewer than k clusters. In that case each
+#' duplicate centre is replaced by the ranking of the judge farthest from the other centres (the judge whose
+#' Kemeny distance from its closest centre is the largest), and the iterations go on; at most 10
+#' re-initializations are made in each start. A judge at distance zero from two or more coincident centres
+#' gets equal membership probabilities on them. A start whose final centres are not all distinct is flagged
+#' as degenerate; with \code{itercca > 1} the best start is chosen among the non-degenerate ones, if any.
+#'
 #' @return An object of the class "cca". It contains:
 #' \tabular{lll}{
 #' pk\tab \tab the membership probability matrix\cr
@@ -33,8 +41,10 @@
 #' Ucca \tab \tab Global uncertainty measure\cr
 #' Uprods \tab \tab Uncertainty measure per-individual (see details)\cr
 #' Uprodscca \tab \tab Global uncertainty measure\cr
-#' consrankout \tab \tab complete output of rank aggregation algorithm, containing eventually multiple median rankings
-#'} 
+#' consrankout \tab \tab complete output of rank aggregation algorithm, containing eventually multiple median rankings\cr
+#' degenerate \tab \tab TRUE if two or more cluster centres coincide (fewer than k distinct clusters)\cr
+#' reinit \tab \tab number of re-initializations of coincident centres (see details)
+#'}
 #'
 #' @examples
 #' \donttest{
@@ -78,6 +88,7 @@ cca <- function(X,k,control=ccacontrol(...), ...){
   out <- list(pk=NULL,clc=NULL,oclc=NULL,idc=NULL,Hcca=NULL,
               hk=NULL, props=NULL, Us=NULL, Ucca=NULL,
               Uprods=NULL,Uprodscca=NULL, consrankout=NULL,
+              degenerate=NULL, reinit=NULL,
               replications=NULL, settings=control)
   
   if (control$itercca==1){
@@ -95,8 +106,14 @@ cca <- function(X,k,control=ccacontrol(...), ...){
     out$Uprods <- res$Us2
     out$Uprodscca <- res$Ucca2
     out$consrankout <- res$Clusters
+    out$degenerate <- res$degenerate #TRUE if two centres coincide
+    out$reinit <- res$reinit #re-initializations of coincident centres
     out$replications <- 1
-    
+
+    if (res$degenerate){ #the solution has fewer than k distinct centres
+      warning("two or more cluster centres coincide: the solution has fewer than k distinct clusters. Try itercca > 1.")
+    }
+
   }else{
     
     iterout <- out
@@ -116,11 +133,19 @@ cca <- function(X,k,control=ccacontrol(...), ...){
       iterout$Uprods[[j]] <- res$Us2
       iterout$Uprodscca[[j]] <- res$Ucca2
       iterout$consrankout[[j]] <- res$Clusters
-      
+      iterout$degenerate[[j]] <- res$degenerate #TRUE if two centres coincide
+      iterout$reinit[[j]] <- res$reinit #re-initializations of coincident centres
+
     }#end for
-    
+
     Ucca <- unlist(iterout$Ucca)
-    idbest <- which.min(Ucca)
+    deg <- unlist(iterout$degenerate) #degenerate starts
+    cand <- which(!deg) #starts with k distinct centres
+    if (length(cand) == 0){ #all the starts are degenerate
+      cand <- seq_along(deg) #choose among all of them
+      warning("in all the starts two or more cluster centres coincide: the solution has fewer than k distinct clusters.")
+    }
+    idbest <- cand[which.min(Ucca[cand])] #best start among the candidates
     
     out$pk <- iterout$pk[[idbest]]
     out$clc <- iterout$clc[[idbest]]
@@ -133,7 +158,9 @@ cca <- function(X,k,control=ccacontrol(...), ...){
     out$Ucca <- iterout$Ucca[[idbest]]
     out$Uprods <- iterout$Uprods[[idbest]]
     out$Uprodscca <- iterout$Uprodscca[[idbest]]
-    out$consrankout <- iterout$Clusters[[idbest]]
+    out$consrankout <- iterout$consrankout[[idbest]] #consrank output of the best start (iterout has no element "Clusters")
+    out$degenerate <- iterout$degenerate[[idbest]] #TRUE if two centres coincide
+    out$reinit <- iterout$reinit[[idbest]] #re-initializations in the chosen start
     out$replications <- control$itercca
 
     
@@ -196,7 +223,11 @@ ccacore <- function(X,
   
   Accs1 <- toler <- 1e-10
   TTTT <- 10
-  
+
+  maxreinit <- 10 #maximum number of re-initializations of coincident centres in this start
+  nreinit <- 0 #re-initializations done so far
+  nocand <- FALSE #TRUE when no judge can replace a coincident centre
+
   
   while (TTTT > toler) {
     L <- L + 1
@@ -243,10 +274,34 @@ ccacore <- function(X,
       centers[h,] <- Clusters[[h]]$Consensus[1,]
       itaux[h,1] <- Clusters[[h]]$Tau[1]
     }
+
+    #coincident centres: identical centres get identical memberships and stay
+    #identical, i.e. the solution has fewer than k clusters. Each duplicate is
+    #replaced by the judge farthest from the other centres (largest distance from
+    #its closest centre), then the iterations go on.
+    dup <- which(duplicated(centers)) #rows equal to a previous centre
+    reinit <- FALSE #TRUE if centres are replaced in this iteration
+    if (length(dup) > 0 && nreinit < maxreinit && !nocand){
+      keep <- setdiff(1:k, dup) #distinct centres kept
+      for (h in dup){
+        dk <- matrix(kemenyd(X, centers[keep, , drop = FALSE]), nrow = r) #judges x kept centres
+        dmin <- apply(dk, 1, min) #distance of each judge from its closest centre
+        if (max(dmin) == 0){ #every judge coincides with a centre: no candidate
+          nocand <- TRUE #no further attempts in this start
+          break
+        }
+        jfar <- which.max(dmin) #farthest judge (first one in case of ties)
+        centers[h, ] <- X[jfar, ] #new centre, distinct from all the others
+        keep <- c(keep, h) #it is now a kept centre
+        reinit <- TRUE #centres have been changed
+      }
+      if (reinit) nreinit <- nreinit + 1 #one more re-initialization
+    }
     Globtau <- crossprod(itaux, intensity) #H_cca, eq. 7 behaviormetrica
     # Accsiter <- colMeans(d * PK)[1] 
     Accsiter <- colMeans(d * (PK^2))[1] #loss function, eq. 2
     TTTT <- abs(Accsiter - Accs1)
+    if (reinit) TTTT <- Inf #after a re-initialization at least one more iteration
     Accs1 <- Accsiter
     # print(Accs1)
     # flush.console()
@@ -282,7 +337,10 @@ ccacore <- function(X,
       Ucca2 = mean(unc1), #Global normalized classifiability
       loss = Accsiter, #loss function
       Iters = L, #iterations
-      Clusters = Clusters #info about the k output of consrank
+      Clusters = Clusters, #info about the k output of consrank
+      degenerate = nrow(unique(centers)) < k, #TRUE if the final centres are not all distinct
+      reinit = nreinit #number of re-initializations of coincident centres
+
     )
   )
 }
@@ -315,6 +373,19 @@ combprobs <- function(D,k){
   }
   
   PK<-Numeratore/repmat(matrix(denom,ncol=1),1,k)
-  
+
+  #judges at distance zero from two or more centres: all the products of k-1
+  #distances are zero and the formula gives 0/0. The membership is shared
+  #equally among those centres (1/k0 each, 0 elsewhere), the symmetric limit
+  #of the formula. Judges with at most one zero distance are unchanged.
+  Z0 <- (D == 0) #TRUE where the judge coincides with the centre
+  k0 <- rowSums(Z0) #number of centres at distance zero from each judge
+  multi <- which(k0 >= 2) #judges for which denom is zero
+  if (length(multi) > 0){
+    PK[multi, ] <- Z0[multi, , drop = FALSE] / k0[multi] #1/k0 on the zero-distance centres
+  }
+
+  return(PK) #membership probability matrix (rows sum to one)
+
 
 }

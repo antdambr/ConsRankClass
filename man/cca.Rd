@@ -32,7 +32,9 @@ Us \tab \tab Uncertainty measure per-individual (see details)\cr
 Ucca \tab \tab Global uncertainty measure\cr
 Uprods \tab \tab Uncertainty measure per-individual (see details)\cr
 Uprodscca \tab \tab Global uncertainty measure\cr
-consrankout \tab \tab complete output of rank aggregation algorithm, containing eventually multiple median rankings
+consrankout \tab \tab complete output of rank aggregation algorithm, containing eventually multiple median rankings\cr
+degenerate \tab \tab TRUE if two or more cluster centres coincide (fewer than k distinct clusters)\cr
+reinit \tab \tab number of re-initializations of coincident centres (see details)
 }
 }
 \description{
@@ -47,6 +49,14 @@ mean of the membership probabilities of each individual, normalized in such a wa
 in the case of maximum uncertainty Us=1. "Ucca" is the average of all the "Us".
 "Uprods" is the product of the membership probabilities of each individual, normalized in such a way that
 in the case of maximum uncertainty Uprods=1. "Uprodscca" is the average of all the "Uprods".
+
+If two cluster centres coincide during the iterations, they would receive the same membership
+probabilities and remain equal, so that the solution would have fewer than k clusters. In that case each
+duplicate centre is replaced by the ranking of the judge farthest from the other centres (the judge whose
+Kemeny distance from its closest centre is the largest), and the iterations go on; at most 10
+re-initializations are made in each start. A judge at distance zero from two or more coincident centres
+gets equal membership probabilities on them. A start whose final centres are not all distinct is flagged
+as degenerate; with \code{itercca > 1} the best start is chosen among the non-degenerate ones, if any.
 }
 \examples{
 \donttest{
