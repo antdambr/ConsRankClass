@@ -301,6 +301,10 @@
   the same results as before.
 * `cca()`: with `itercca > 1` the component `consrankout` was always `NULL`; it
   is now the output of `consrank()` for the best start.
+* `ccacontrol()`: `algorithm = "BOLT"` (ConsRank >= 3.1) is now documented, and
+  the name of the algorithm is checked and matched ignoring the case, as in
+  `ranktreecontrol()`. The help of `full` said the opposite of what it does
+  (`full = TRUE` searches the median ranking among the permutations only).
 * `summary.ranktree()`: `NULL` was printed at the end of the summary; now the
   paths of the leaves are returned invisibly.
 * Typos: "itrems" in `print.kunfolding()`; the row "Sperman" (now "Spearman") of

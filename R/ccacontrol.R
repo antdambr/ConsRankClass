@@ -2,8 +2,11 @@
 #'
 #' Utility function to use to set the control arguments of \code{cca}
 #'
-#' @param algorithm The algorithm used to compute the median ranking. One among"BB", "quick" (default), "fast" and "decor"
-#' @param full Specifies if the median ranking must be searched in the universe of rankings including all the possible ties. Default: FALSE
+#' @param algorithm The algorithm used to compute the median ranking. One among "BB", "quick" (default),
+#' "fast", "decor" and "BOLT" (the name is matched ignoring the case). "BOLT" is the deterministic heuristic of \code{\link[ConsRank]{bolt}},
+#' fast also with many objects
+#' @param full If TRUE, the median ranking is searched in the restricted space of permutations (rankings without ties);
+#' if FALSE (default), in the universe of rankings of the objects including all the possible ties
 #' @param itercca Number of iterations of cca
 #' @param consrankitermax Number of iterations for "fast" and "decor" algorithms. itermax=10 is the default option.  
 #' @param np (for "decor" only) the number of population individuals. np=15 is the default option.
@@ -29,7 +32,15 @@ ccacontrol <- function(algorithm="quick",full=FALSE, itercca=1, consrankitermax=
                             ps=FALSE)
   
 {
-  
+
+  #algorithm of the median ranking, matched ignoring the case as in consrank
+  algs <- c("BB","quick","fast","decor","BOLT") #algorithms of ConsRank::consrank
+  ialg <- match(tolower(algorithm), tolower(algs)) #position in the list (NA if unknown)
+  if (length(algorithm) != 1 || is.na(ialg)){ #one known algorithm only
+    stop("algorithm must be one of \"BB\", \"quick\", \"fast\", \"decor\" or \"BOLT\".")
+  }
+  algorithm <- algs[ialg] #name as written in consrank
+
   return(list(algorithm=algorithm, full=full, itercca=itercca, consrankitermax=consrankitermax, np=np, gl=gl, ff=ff,
               cr=cr, proc=proc, ps=ps))
 }

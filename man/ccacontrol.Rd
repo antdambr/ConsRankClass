@@ -18,9 +18,12 @@ ccacontrol(
 )
 }
 \arguments{
-\item{algorithm}{The algorithm used to compute the median ranking. One among"BB", "quick" (default), "fast" and "decor"}
+\item{algorithm}{The algorithm used to compute the median ranking. One among "BB", "quick" (default),
+"fast", "decor" and "BOLT" (the name is matched ignoring the case). "BOLT" is the deterministic heuristic of \code{\link[ConsRank]{bolt}},
+fast also with many objects}
 
-\item{full}{Specifies if the median ranking must be searched in the universe of rankings including all the possible ties. Default: FALSE}
+\item{full}{If TRUE, the median ranking is searched in the restricted space of permutations (rankings without ties);
+if FALSE (default), in the universe of rankings of the objects including all the possible ties}
 
 \item{itercca}{Number of iterations of cca}
 

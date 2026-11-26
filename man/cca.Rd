@@ -42,7 +42,7 @@ K-Median Cluster Component Analysis, a distribution-free soft-clustering method
 for preference rankings.
 }
 \details{
-The user can use any algorithm implemented in the \code{consrank} function from the \pkg{ConsRank} package. All algorithms allow the user to set the option 'full=TRUE' 
+The user can use any algorithm implemented in the \code{consrank} function from the \pkg{ConsRank} package ("BB", "quick", "fast", "decor" or "BOLT", see \code{\link{ccacontrol}}). All algorithms allow the user to set the option 'full=TRUE' 
 if the median ranking(s) must be searched in the restricted space of permutations instead of in the unconstrained universe of rankings of n items including all possible ties. 
 There are two classification uncertainty measures: Us and Uprods. "Us" is the geometric
 mean of the membership probabilities of each individual, normalized in such a way that

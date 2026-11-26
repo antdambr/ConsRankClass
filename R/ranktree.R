@@ -12,7 +12,7 @@
 #' to the consrank algorithm, which is called by \code{ranktree}
 #' @param \dots arguments passed bypassing \code{ranktreecontrol}
 #' 
-#' @details The user can use any algorithm implemented in the \code{consrank} function from the \pkg{ConsRank} package. All algorithms allow the user to set the option 'full=TRUE' 
+#' @details The user can use any algorithm implemented in the \code{consrank} function from the \pkg{ConsRank} package ("BB", "quick", "fast", "decor" or "BOLT", see \code{\link{ranktreecontrol}}). All algorithms allow the user to set the option 'full=TRUE' 
 #' if the median ranking(s) must be searched in the restricted space of permutations instead of in the unconstrained universe of rankings of n items including all possible ties. 
 #' The output consists in a object of the class "ranktree". It contains:
 #' \tabular{llll}{
